@@ -202,13 +202,12 @@ function DashboardSidebar() {
 function DashboardHeader() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const roleHeadings = {
-    beneficiary: "beneficiary_dashboard" as const,
-    officer: "officer_dashboard" as const,
-  };
+
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
-      <h1 className="text-xl font-semibold">{user ? t(roleHeadings[user.role]) : 'Dashboard'}</h1>
+      <h1 className="text-xl font-semibold">
+        {user ? `Welcome, ${user.name}` : 'Dashboard'}
+      </h1>
       <div className="flex items-center gap-2">
         <LanguageToggle />
         <UserNav />
