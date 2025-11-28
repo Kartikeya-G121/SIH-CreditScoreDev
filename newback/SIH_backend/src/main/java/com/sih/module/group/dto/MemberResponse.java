@@ -14,10 +14,10 @@ import java.time.LocalDate;
 public class MemberResponse {
     private Long memberId;
     private Long userId;
+    private String userName;
     private String email;
     private String phoneNumber;
     private String role;
     private String status;
     private LocalDate joinedAt;
 }
-

@@ -9,6 +9,7 @@ import com.sih.module.group.entity.BorrowerGroup;
 import com.sih.module.group.entity.GroupMember;
 import com.sih.module.group.repository.BorrowerGroupRepository;
 import com.sih.module.group.repository.GroupMemberRepository;
+import com.sih.module.beneficiary.repository.BeneficiaryProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class GroupService {
     private final BorrowerGroupRepository groupRepository;
     private final GroupMemberRepository memberRepository;
     private final UserRepository userRepository;
+    private final BeneficiaryProfileRepository beneficiaryProfileRepository;
 
     private static final int MAX_GROUP_MEMBERS = 10;
 
@@ -259,9 +261,16 @@ public class GroupService {
                 .formationDate(group.getFormationDate())
                 .projectDescription(group.getProjectDescription())
                 .createdByUserId(group.getCreatedBy() != null ? group.getCreatedBy().getUserId() : null)
+                .leaderName(
+                        group.getCreatedBy() != null
+                                ? beneficiaryProfileRepository.findByUserUserId(group.getCreatedBy().getUserId())
+                                        .map(p -> p.getFullName())
+                                        .orElse("Unknown User")
+                                : "Unknown")
                 .groupScore(group.getGroupScore())
                 .isActive(group.getIsActive())
                 .memberCount(members.size())
+                .maxMembers(MAX_GROUP_MEMBERS)
                 .members(members.stream().map(this::mapMemberToResponse).collect(Collectors.toList()))
                 .createdAt(group.getCreatedAt())
                 .updatedAt(group.getUpdatedAt())
@@ -272,6 +281,9 @@ public class GroupService {
         return MemberResponse.builder()
                 .memberId(member.getMemberId())
                 .userId(member.getUser().getUserId())
+                .userName(beneficiaryProfileRepository.findByUserUserId(member.getUser().getUserId())
+                        .map(p -> p.getFullName())
+                        .orElse("Unknown User"))
                 .email(member.getUser().getEmail())
                 .phoneNumber(member.getUser().getPhoneNumber())
                 .role(member.getRole())

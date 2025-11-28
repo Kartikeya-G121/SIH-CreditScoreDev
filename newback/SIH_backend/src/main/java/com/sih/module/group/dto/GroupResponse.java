@@ -23,8 +23,9 @@ public class GroupResponse {
     private BigDecimal groupScore;
     private Boolean isActive;
     private Integer memberCount;
+    private Integer maxMembers;
+    private String leaderName;
     private List<MemberResponse> members;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }
-
