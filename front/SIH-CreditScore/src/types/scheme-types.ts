@@ -37,3 +37,22 @@ export interface StatusResponse {
     success: boolean;
     message: string;
 }
+
+export interface RegionRequest {
+    regionName: string;
+    riskFactor: number;
+    baseInterestAdjustment: number;
+    maxLoanAmountAdjustment: number;
+}
+
+export interface RegionResponse {
+    id: number;
+    regionName: string;
+    riskFactor: number;
+    baseInterestAdjustment: number;
+    maxLoanAmountAdjustment: number;
+}
+
+export interface RegionListResponse {
+    regions: RegionResponse[];
+}

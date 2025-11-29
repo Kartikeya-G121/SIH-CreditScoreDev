@@ -75,16 +75,16 @@ export function ChatbotModal({
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-        // A bit of a hack to scroll to bottom. 
-        // A better solution would use a proper scroll-to-bottom library.
-        setTimeout(() => {
-            if (scrollAreaRef.current) {
-                scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth'});
-            }
-        }, 100);
+      // A bit of a hack to scroll to bottom. 
+      // A better solution would use a proper scroll-to-bottom library.
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        }
+      }, 100);
     }
   }, [messages]);
-  
+
 
   if (!isOpen) return null;
 
@@ -95,7 +95,7 @@ export function ChatbotModal({
           <CardTitle className="flex items-center gap-2">
             <Bot /> {t('ask_nidhi')}
           </CardTitle>
-           <CardDescription>{t('ai_assistant_desc')}</CardDescription>
+          <CardDescription>{t('ai_assistant_desc')}</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden">
           <ScrollArea className="h-full" ref={scrollAreaRef}>
@@ -125,7 +125,7 @@ export function ChatbotModal({
                   >
                     {message.content}
                   </div>
-                   {message.role === 'user' && (
+                  {message.role === 'user' && (
                     <Avatar className="h-8 w-8">
                       <AvatarFallback>
                         <User className="h-5 w-5" />
@@ -135,15 +135,15 @@ export function ChatbotModal({
                 </div>
               ))}
               {isLoading && (
-                 <div className="flex items-start gap-3 justify-start">
-                    <Avatar className="h-8 w-8">
-                       <AvatarFallback>
-                         <Bot className="h-5 w-5" />
-                       </AvatarFallback>
-                     </Avatar>
-                    <div className="bg-muted rounded-lg p-3">
-                         <Loader2 className="h-5 w-5 animate-spin" />
-                    </div>
+                <div className="flex items-start gap-3 justify-start">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      <Bot className="h-5 w-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="bg-muted rounded-lg p-3">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </div>
                 </div>
               )}
             </div>

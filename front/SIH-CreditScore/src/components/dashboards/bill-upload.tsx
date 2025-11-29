@@ -56,7 +56,7 @@ export default function BillUpload({ onBillConfirmed }: { onBillConfirmed: (bill
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
-  
+
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -87,7 +87,7 @@ export default function BillUpload({ onBillConfirmed }: { onBillConfirmed: (bill
     setIsLoading(true);
     setError(null);
     setParsedData(null);
-    
+
     try {
       const photoDataUri = await fileToDataUri(file);
       const result = await billParser({ photoDataUri });
@@ -108,26 +108,26 @@ export default function BillUpload({ onBillConfirmed }: { onBillConfirmed: (bill
       setIsLoading(false);
     }
   };
-  
+
   const handleReset = (clearAll: boolean = false) => {
-      if (clearAll) {
-        setFile(null);
-        setPreviewUrl(null);
-        setConsent(false);
-      }
-      setParsedData(null);
-      setError(null);
-      if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-      }
+    if (clearAll) {
+      setFile(null);
+      setPreviewUrl(null);
+      setConsent(false);
+    }
+    setParsedData(null);
+    setError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   }
 
   const handleConfirm = () => {
     if (!parsedData) return;
     onBillConfirmed(parsedData);
     toast({
-        title: "Bill Saved!",
-        description: "The bill has been added to your profile."
+      title: "Bill Saved!",
+      description: "The bill has been added to your profile."
     });
     handleReset(true);
   }
@@ -149,7 +149,7 @@ export default function BillUpload({ onBillConfirmed }: { onBillConfirmed: (bill
             className="hidden"
             accept="image/png, image/jpeg, image/webp"
           />
-          
+
           {!previewUrl ? (
             <div
               onClick={handleUploadClick}
@@ -160,8 +160,8 @@ export default function BillUpload({ onBillConfirmed }: { onBillConfirmed: (bill
               <p className="text-sm text-muted-foreground">{t('file_specs')}</p>
             </div>
           ) : (
-             <div className="relative w-full max-w-sm mx-auto">
-               <Image src={previewUrl} alt="Bill preview" width={400} height={600} className="rounded-lg object-contain" />
+            <div className="relative w-full max-w-sm mx-auto">
+              <Image src={previewUrl} alt="Bill preview" width={400} height={600} className="rounded-lg object-contain" />
             </div>
           )}
 
@@ -171,19 +171,19 @@ export default function BillUpload({ onBillConfirmed }: { onBillConfirmed: (bill
               {t('consent_text')}
             </Label>
           </div>
-          
+
           <div className="flex gap-4">
             <Button onClick={handleSubmit} disabled={isLoading || !file || !consent}>
               {isLoading ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('parsing_bill')}</>
               ) : t('parse_bill')}
             </Button>
-            { (file || parsedData || error) && <Button variant="outline" onClick={() => handleReset(true)}>{t('reset')}</Button> }
+            {(file || parsedData || error) && <Button variant="outline" onClick={() => handleReset(true)}>{t('reset')}</Button>}
           </div>
-          
+
         </CardContent>
       </Card>
-      
+
       {error && (
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
@@ -193,39 +193,39 @@ export default function BillUpload({ onBillConfirmed }: { onBillConfirmed: (bill
 
       {parsedData && (
         <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center"><FileJson className="mr-2 h-5 w-5"/> {t('parsed_bill_data')}</CardTitle>
-                <CardDescription>{t('verify_parsed_data')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <p><strong>{t('vendor')}:</strong> {parsedData.vendorName}</p>
-                    <p><strong>{t('date')}:</strong> {parsedData.transactionDate}</p>
-                    <p><strong>{t('total_amount')}:</strong> <IndianRupee className="inline h-4 w-4" />{parsedData.totalAmount}</p>
-                    <p><strong>{t('category')}:</strong> {parsedData.category}</p>
-                </div>
-                <h4 className="font-semibold mt-4 mb-2">{t('line_items')}</h4>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Description</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {parsedData.lineItems.map((item, index) => (
-                            <TableRow key={index}>
-                                <TableCell>{item.description}</TableCell>
-                                <TableCell className="text-right"><IndianRupee className="inline h-4 w-4" />{item.amount}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-                 <div className="flex justify-end mt-4 gap-2">
-                    <Button variant="outline" onClick={() => handleReset(false)}>{t('re_scan')}</Button>
-                    <Button onClick={handleConfirm}>{t('confirm_and_add')}</Button>
-                </div>
-            </CardContent>
+          <CardHeader>
+            <CardTitle className="flex items-center"><FileJson className="mr-2 h-5 w-5" /> {t('parsed_bill_data')}</CardTitle>
+            <CardDescription>{t('verify_parsed_data')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <p><strong>{t('vendor')}:</strong> {parsedData.vendorName}</p>
+              <p><strong>{t('date')}:</strong> {parsedData.transactionDate}</p>
+              <p><strong>{t('total_amount')}:</strong> <IndianRupee className="inline h-4 w-4" />{parsedData.totalAmount}</p>
+              <p><strong>{t('category')}:</strong> {parsedData.category}</p>
+            </div>
+            <h4 className="font-semibold mt-4 mb-2">{t('line_items')}</h4>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {parsedData.lineItems.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.description}</TableCell>
+                    <TableCell className="text-right"><IndianRupee className="inline h-4 w-4" />{item.amount}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="flex justify-end mt-4 gap-2">
+              <Button variant="outline" onClick={() => handleReset(false)}>{t('re_scan')}</Button>
+              <Button onClick={handleConfirm}>{t('confirm_and_add')}</Button>
+            </div>
+          </CardContent>
         </Card>
       )}
     </div>

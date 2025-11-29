@@ -137,6 +137,11 @@ function DashboardSidebar() {
         label: 'Risk Monitoring',
       },
       {
+        id: 'schemes',
+        icon: <Landmark />,
+        label: 'Loan Schemes',
+      },
+      {
         id: 'notifications',
         icon: <BellRing />,
         label: t('sidebar_notifications'),
@@ -264,6 +269,9 @@ export default function DashboardPage() {
       case 'officer':
         if (tab === 'notifications') {
           return <NotificationsCenter />;
+        }
+        if (tab === 'schemes') {
+          return <SchemesDashboard />;
         }
         return <OfficerDashboard activeTab={tab} />;
       default:
