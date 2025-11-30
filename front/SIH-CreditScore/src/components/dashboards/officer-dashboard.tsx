@@ -56,6 +56,7 @@ import {
 } from 'lucide-react';
 import { MOCK_BENEFICIARIES_LIST, MOCK_ADMIN_DATA } from '@/lib/data';
 import { StatCard } from '../shared/stat-card';
+import { IndiaHeatmap } from '../shared/india-heatmap';
 import {
   ResponsiveContainer,
   BarChart,
@@ -79,7 +80,6 @@ import { useLanguage } from '@/contexts/language-context';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import RiskMonitoringCenter from './risk-monitoring-center';
-import { IndiaRepaymentHeatmap } from './india-repayment-heatmap';
 
 type Beneficiary = (typeof MOCK_BENEFICIARIES_LIST)[0];
 
@@ -111,12 +111,12 @@ function RiskAnalysisDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   if (!beneficiary) return null;
-
+  
   const compositeScore = beneficiary.score;
   const repaymentScore = Math.min(1000, Math.round(compositeScore * 1.05));
   const incomeScore = Math.min(1000, Math.round(compositeScore * 0.78));
   const fraudRisk = Math.max(5, Math.min(25, Math.round((1000 - compositeScore) / 40)));
-
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -138,7 +138,7 @@ function RiskAnalysisDialog({
           <div className="space-y-6">
             <div>
               <h3 className="text-xl font-semibold mb-4">Credit Score Analysis</h3>
-
+              
               <div className="bg-muted/30 rounded-lg p-6 text-center space-y-4">
                 <p className="text-sm text-muted-foreground">Composite Beneficiary Score</p>
                 <div className="text-6xl font-bold text-blue-600">{compositeScore}</div>
@@ -176,7 +176,7 @@ function RiskAnalysisDialog({
                     const height = 70 + Math.random() * 30;
                     return (
                       <div key={month} className="flex-1 flex flex-col items-center gap-1">
-                        <div
+                        <div 
                           className="w-full bg-blue-600 rounded-t transition-all hover:bg-blue-700"
                           style={{ height: `${height}%` }}
                         />
@@ -197,7 +197,7 @@ function RiskAnalysisDialog({
           <div className="space-y-6">
             <div>
               <h3 className="text-xl font-semibold mb-4">Score Explainability (XAI)</h3>
-
+              
               <div className="space-y-4">
                 <div>
                   <h4 className="font-semibold mb-3">Key Score Factors:</h4>
@@ -290,37 +290,13 @@ export default function OfficerDashboard({ activeTab = 'dashboard' }: OfficerDas
     setIsDialogOpen(true);
   };
 
-  const stateRepaymentData = [
-    { id: 'MH', name: 'Maharashtra', repaymentRate: 98, totalAmount: 45000000, beneficiaries: 125000 },
-    { id: 'GJ', name: 'Gujarat', repaymentRate: 92, totalAmount: 38000000, beneficiaries: 98000 },
-    { id: 'AP', name: 'Andhra Pradesh', repaymentRate: 89, totalAmount: 32000000, beneficiaries: 87000 },
-    { id: 'UP', name: 'Uttar Pradesh', repaymentRate: 95, totalAmount: 52000000, beneficiaries: 145000 },
-    { id: 'BR', name: 'Bihar', repaymentRate: 88, totalAmount: 28000000, beneficiaries: 76000 },
-    { id: 'RJ', name: 'Rajasthan', repaymentRate: 99, totalAmount: 41000000, beneficiaries: 102000 },
-    { id: 'WB', name: 'West Bengal', repaymentRate: 91, totalAmount: 35000000, beneficiaries: 92000 },
-    { id: 'TN', name: 'Tamil Nadu', repaymentRate: 96, totalAmount: 48000000, beneficiaries: 118000 },
-    { id: 'KA', name: 'Karnataka', repaymentRate: 94, totalAmount: 44000000, beneficiaries: 108000 },
-    { id: 'KL', name: 'Kerala', repaymentRate: 97, totalAmount: 29000000, beneficiaries: 68000 },
-    { id: 'MP', name: 'Madhya Pradesh', repaymentRate: 87, totalAmount: 36000000, beneficiaries: 95000 },
-    { id: 'OD', name: 'Odisha', repaymentRate: 86, totalAmount: 24000000, beneficiaries: 64000 },
-    { id: 'TG', name: 'Telangana', repaymentRate: 93, totalAmount: 31000000, beneficiaries: 78000 },
-    { id: 'PB', name: 'Punjab', repaymentRate: 90, totalAmount: 22000000, beneficiaries: 54000 },
-    { id: 'HR', name: 'Haryana', repaymentRate: 91, totalAmount: 26000000, beneficiaries: 61000 },
-    { id: 'JH', name: 'Jharkhand', repaymentRate: 84, totalAmount: 19000000, beneficiaries: 52000 },
-    { id: 'CT', name: 'Chhattisgarh', repaymentRate: 85, totalAmount: 21000000, beneficiaries: 58000 },
-    { id: 'AS', name: 'Assam', repaymentRate: 83, totalAmount: 18000000, beneficiaries: 49000 },
-    { id: 'HP', name: 'Himachal Pradesh', repaymentRate: 88, totalAmount: 12000000, beneficiaries: 32000 },
-    { id: 'UK', name: 'Uttarakhand', repaymentRate: 89, totalAmount: 14000000, beneficiaries: 36000 },
-    { id: 'JK', name: 'Jammu & Kashmir', repaymentRate: 82, totalAmount: 16000000, beneficiaries: 42000 },
-    { id: 'DL', name: 'Delhi', repaymentRate: 95, totalAmount: 27000000, beneficiaries: 65000 },
-    { id: 'GA', name: 'Goa', repaymentRate: 96, totalAmount: 8000000, beneficiaries: 18000 },
-    { id: 'AR', name: 'Arunachal Pradesh', repaymentRate: 79, totalAmount: 6000000, beneficiaries: 15000 },
-    { id: 'NL', name: 'Nagaland', repaymentRate: 80, totalAmount: 5000000, beneficiaries: 12000 },
-    { id: 'MN', name: 'Manipur', repaymentRate: 81, totalAmount: 5500000, beneficiaries: 14000 },
-    { id: 'MZ', name: 'Mizoram', repaymentRate: 78, totalAmount: 4500000, beneficiaries: 11000 },
-    { id: 'TR', name: 'Tripura', repaymentRate: 82, totalAmount: 7000000, beneficiaries: 17000 },
-    { id: 'ML', name: 'Meghalaya', repaymentRate: 80, totalAmount: 6500000, beneficiaries: 16000 },
-    { id: 'SK', name: 'Sikkim', repaymentRate: 85, totalAmount: 4000000, beneficiaries: 9000 },
+  const geoData = [
+    { name: 'Maharashtra', repayment: 98 },
+    { name: 'Gujarat', repayment: 92 },
+    { name: 'Andhra', repayment: 85 },
+    { name: 'UP', repayment: 95 },
+    { name: 'Bihar', repayment: 88 },
+    { name: 'Rajasthan', repayment: 99 },
   ];
 
   const filteredBeneficiaries = useMemo(() => {
@@ -337,7 +313,7 @@ export default function OfficerDashboard({ activeTab = 'dashboard' }: OfficerDas
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Beneficiaries"
           value={stats.totalBeneficiaries}
@@ -368,7 +344,7 @@ export default function OfficerDashboard({ activeTab = 'dashboard' }: OfficerDas
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-12 lg:col-span-4">
           <CardHeader>
             <CardTitle>AI Forecast Graph</CardTitle>
@@ -416,7 +392,7 @@ export default function OfficerDashboard({ activeTab = 'dashboard' }: OfficerDas
                 />
                 <Pie data={riskDistribution} dataKey="value" nameKey="name">
                   {riskDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
               </PieChart>
@@ -523,7 +499,7 @@ export default function OfficerDashboard({ activeTab = 'dashboard' }: OfficerDas
                         variant={riskVariant[beneficiary.risk]}
                         className={
                           riskColorClass[
-                          beneficiary.risk as keyof typeof riskColorClass
+                            beneficiary.risk as keyof typeof riskColorClass
                           ]
                         }
                       >
@@ -586,22 +562,58 @@ export default function OfficerDashboard({ activeTab = 'dashboard' }: OfficerDas
         onOpenChange={setIsDialogOpen}
       />
 
-      <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80">
-        <CardHeader className="pb-6">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-yellow-600 rounded-lg flex items-center justify-center">
-              <MapPin className="h-4 w-4 text-white" />
-            </div>
-            Repayment by State - India Heatmap
-          </CardTitle>
-          <CardDescription className="text-base">
-            Interactive visualization of repayment rates across Indian states. States with higher repayment rates glow brighter.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-2">
-          <IndiaRepaymentHeatmap data={stateRepaymentData} className="w-full" />
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Repayment by State</CardTitle>
+            <CardDescription>
+              Visualization of repayment rates across key states.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{ repayment: { label: 'Repayment %', color: 'hsl(var(--primary))' } }}
+              className="h-[300px] w-full"
+            >
+              <BarChart data={geoData} layout="vertical" margin={{ left: 20 }}>
+                <CartesianGrid horizontal={false} />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <XAxis type="number" hide />
+                <Tooltip
+                  cursor={{ fill: 'hsl(var(--muted))' }}
+                  content={<ChartTooltipContent indicator="dot" />}
+                />
+                <Bar
+                  dataKey="repayment"
+                  radius={5}
+                  fill="var(--color-repayment)"
+                />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <IndiaHeatmap
+          data={[
+            { name: 'Maharashtra', value: 98, color: '' },
+            { name: 'Gujarat', value: 92, color: '' },
+            { name: 'Andhra Pradesh', value: 85, color: '' },
+            { name: 'Uttar Pradesh', value: 95, color: '' },
+            { name: 'Bihar', value: 88, color: '' },
+            { name: 'Rajasthan', value: 99, color: '' },
+            { name: 'Karnataka', value: 94, color: '' },
+            { name: 'Tamil Nadu', value: 91, color: '' },
+            { name: 'West Bengal', value: 87, color: '' },
+            { name: 'Kerala', value: 96, color: '' },
+          ]}
+          title="Geographic Repayment Distribution"
+        />
+      </div>
 
       <div className="grid grid-cols-1">
         <Card>
