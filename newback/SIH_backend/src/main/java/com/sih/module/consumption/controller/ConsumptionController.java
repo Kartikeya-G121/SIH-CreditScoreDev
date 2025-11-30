@@ -5,6 +5,7 @@ import com.sih.module.consumption.dto.*;
 import com.sih.module.consumption.service.ConsumptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/consumption")
 @RequiredArgsConstructor
+@Slf4j
 public class ConsumptionController {
 
     private final ConsumptionService consumptionService;
@@ -99,6 +101,23 @@ public class ConsumptionController {
             @RequestParam(required = false) String dataSource,
             @RequestParam(required = false) String status) {
         List<ConsumptionEntryResponse> entries = consumptionService.searchEntries(userId, dataSource, status);
+        return ResponseEntity.ok(ApiResponse.success(entries));
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse<List<ConsumptionEntryResponse>>> getConsumptionHistory(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam(required = false) java.time.LocalDate startDate,
+            @RequestParam(required = false) java.time.LocalDate endDate) {
+
+        if (startDate == null) {
+            startDate = java.time.LocalDate.now().minusMonths(6);
+        }
+        if (endDate == null) {
+            endDate = java.time.LocalDate.now();
+        }
+
+        List<ConsumptionEntryResponse> entries = consumptionService.getConsumptionHistory(userId, startDate, endDate);
         return ResponseEntity.ok(ApiResponse.success(entries));
     }
 }

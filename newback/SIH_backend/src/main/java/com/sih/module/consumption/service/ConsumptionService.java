@@ -82,6 +82,23 @@ public class ConsumptionService {
                 .storageType("SUPABASE")
                 .build();
 
+        // Enforce retention policy: Keep max 10 bills per category
+        List<ConsumptionEntry> existingEntries = entryRepository.findByUserUserId(userId).stream()
+                .filter(e -> e.getDataSource().equals(request.getDataSource()))
+                .sorted(Comparator.comparing(ConsumptionEntry::getBillingDate,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.toList());
+
+        if (existingEntries.size() >= 10) {
+            // Delete the oldest entries until we have space (though usually just 1)
+            int toDelete = existingEntries.size() - 9; // We want to keep 9 so the new one makes 10
+            for (int i = 0; i < toDelete; i++) {
+                entryRepository.delete(existingEntries.get(i));
+                log.info("Retention policy: Deleted old entry {} for user {}", existingEntries.get(i).getEntryId(),
+                        userId);
+            }
+        }
+
         entry = entryRepository.save(entry);
         log.info("Consumption entry created: {} for user: {}", entry.getEntryId(), userId);
 
@@ -346,5 +363,12 @@ public class ConsumptionService {
                 .fileS3Url(entry.getFileS3Url())
                 .createdAt(entry.getCreatedAt())
                 .build();
+    }
+
+    public List<ConsumptionEntryResponse> getConsumptionHistory(Long userId, java.time.LocalDate startDate,
+            java.time.LocalDate endDate) {
+        return entryRepository.findByUserUserIdAndBillingDateBetween(userId, startDate, endDate).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 }
