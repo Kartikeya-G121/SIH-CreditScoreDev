@@ -1,0 +1,373 @@
+{
+  "info": {
+    "_postman_id": "beneficiary-module-tests",
+    "name": "Beneficiary Module Tests",
+    "description": "Collection for testing the Beneficiary Module API endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Beneficiary Management",
+      "item": [
+        {
+          "name": "Create Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fullName\": \"John Doe\",\n    \"casteCategory\": \"OBC\",\n    \"dob\": \"1990-01-01\",\n    \"gender\": \"MALE\",\n    \"addressLine\": \"123 Main St\",\n    \"district\": \"Patna\",\n    \"state\": \"Bihar\",\n    \"pincode\": \"800001\",\n    \"regionType\": \"URBAN\",\n    \"geoLat\": 25.5941,\n    \"geoLong\": 85.1376,\n    \"literacyScore\": 75,\n    \"identityProofType\": \"AADHAR\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/beneficiaries",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "beneficiaries"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/beneficiaries/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "beneficiaries", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fullName\": \"John Updated\",\n    \"addressLine\": \"456 New St\",\n    \"literacyScore\": 80\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/beneficiaries/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "beneficiaries", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Certificate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/beneficiaries/upload-certificate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "beneficiaries", "upload-certificate"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download Certificate",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/beneficiaries/certificate/download",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "beneficiaries", "certificate", "download"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Identity Proof",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/beneficiaries/upload-identity",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "beneficiaries", "upload-identity"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download Identity Proof",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/beneficiaries/identity/download",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "beneficiaries", "identity", "download"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Profiles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/beneficiaries?state=Bihar&district=Patna",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "beneficiaries"],
+              "query": [
+                {
+                  "key": "state",
+                  "value": "Bihar"
+                },
+                {
+                  "key": "district",
+                  "value": "Patna"
+                },
+                {
+                  "key": "pincode",
+                  "value": "800001",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/beneficiaries/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "beneficiaries", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"verifiedAnnualIncome\": 50000.00,\n    \"comments\": \"Verified documents successfully\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/beneficiaries/1/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "beneficiaries", "1", "verify"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "State-wise Heatmap",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/heatmap/state-wise",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "heatmap", "state-wise"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "District-wise Heatmap",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/heatmap/district-wise?state=Bihar",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "heatmap", "district-wise"],
+              "query": [
+                {
+                  "key": "state",
+                  "value": "Bihar"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Risk Clusters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/heatmap/clusters",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "heatmap", "clusters"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Demographic Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/beneficiaries/stats/demographics",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "analytics",
+                "beneficiaries",
+                "stats",
+                "demographics"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "YOUR_JWT_TOKEN_HERE",
+      "type": "string"
+    }
+  ]
+}
