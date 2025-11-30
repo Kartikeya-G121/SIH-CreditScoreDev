@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/language-context';
 import { schemeService } from '@/services/scheme-service';
 import { SchemeResponse } from '@/types/scheme-types';
@@ -28,6 +29,7 @@ export function SchemesDashboard() {
     const { t } = useLanguage();
     const { user } = useAuth();
     const { toast } = useToast();
+    const router = useRouter();
     const [schemes, setSchemes] = useState<SchemeResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -64,6 +66,11 @@ export function SchemesDashboard() {
     const handleViewDetails = (scheme: SchemeResponse) => {
         setSelectedScheme(scheme);
         setIsDetailsOpen(true);
+    };
+
+    const handleApplyNow = (scheme: SchemeResponse) => {
+        // Navigate to apply-loan page with scheme pre-selected
+        router.push(`/dashboard?tab=apply-loan&scheme=${scheme.schemeId}`);
     };
 
     const handleToggleStatus = async (scheme: SchemeResponse) => {
@@ -134,6 +141,7 @@ export function SchemesDashboard() {
                             isAdmin={isAdmin}
                             onToggleStatus={handleToggleStatus}
                             onDelete={handleDeleteClick}
+                            onApplyNow={handleApplyNow}
                         />
                     ) : (
                         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center animate-in fade-in-50">

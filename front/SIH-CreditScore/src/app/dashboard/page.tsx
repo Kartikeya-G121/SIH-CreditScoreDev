@@ -24,9 +24,11 @@ import NotificationsCenter from '@/components/dashboards/notifications-center';
 import ScoreExplainability from '@/components/dashboards/score-explainability';
 import { GroupDashboard } from '@/components/dashboards/group/group-dashboard';
 import { SchemesDashboard } from '@/components/dashboards/scheme/schemes-dashboard';
+import { ApplyLoanPage } from '@/components/dashboards/loan/apply-loan-page';
 import {
   LayoutDashboard,
   Users,
+  FileText,
   BarChart3,
   Settings,
   HelpCircle,
@@ -118,6 +120,16 @@ function DashboardSidebar() {
         id: 'schemes',
         icon: <Landmark />,
         label: 'Loan Schemes',
+      },
+      {
+        id: 'applications',
+        icon: <FileText />,
+        label: 'My Applications',
+      },
+      {
+        id: 'apply-loan',
+        icon: <Landmark />,
+        label: 'Apply for Loan',
       },
       {
         id: 'notifications',
@@ -264,6 +276,10 @@ export default function DashboardPage() {
         }
         if (tab === 'schemes') {
           return <SchemesDashboard />;
+        }
+        if (tab === 'apply-loan') {
+          const schemeId = searchParams.get('scheme');
+          return <ApplyLoanPage preSelectedSchemeId={schemeId ? parseInt(schemeId) : undefined} />;
         }
         return <BeneficiaryDashboard activeTab={tab} />;
       case 'officer':

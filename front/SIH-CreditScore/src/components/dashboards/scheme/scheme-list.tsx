@@ -13,9 +13,10 @@ interface SchemeListProps {
     onToggleStatus?: (scheme: SchemeResponse) => void;
     onEdit?: (scheme: SchemeResponse) => void;
     onDelete?: (scheme: SchemeResponse) => void;
+    onApplyNow?: (scheme: SchemeResponse) => void;
 }
 
-export function SchemeList({ schemes, onViewDetails, isAdmin, onToggleStatus, onEdit, onDelete }: SchemeListProps) {
+export function SchemeList({ schemes, onViewDetails, isAdmin, onToggleStatus, onEdit, onDelete, onApplyNow }: SchemeListProps) {
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {schemes.map((scheme) => (
@@ -72,9 +73,20 @@ export function SchemeList({ schemes, onViewDetails, isAdmin, onToggleStatus, on
                         </div>
                     </CardContent>
                     <CardFooter className="flex gap-2">
-                        <Button className="flex-1" variant="outline" onClick={() => onViewDetails(scheme)}>
-                            View Details
-                        </Button>
+                        {!isAdmin && onApplyNow ? (
+                            <>
+                                <Button className="flex-1" onClick={() => onApplyNow(scheme)}>
+                                    Apply Now
+                                </Button>
+                                <Button variant="outline" onClick={() => onViewDetails(scheme)}>
+                                    Details
+                                </Button>
+                            </>
+                        ) : (
+                            <Button className="flex-1" variant="outline" onClick={() => onViewDetails(scheme)}>
+                                View Details
+                            </Button>
+                        )}
                         {isAdmin && (
                             <>
                                 {onEdit && (

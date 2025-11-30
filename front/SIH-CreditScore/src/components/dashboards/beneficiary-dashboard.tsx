@@ -29,6 +29,7 @@ import {
   BarChart3,
   Eye,
   FileText,
+  Landmark,
 } from 'lucide-react';
 
 import { MOCK_BENEFICIARY_DATA, type User } from '@/lib/data';
@@ -64,6 +65,12 @@ import { useLanguage } from '@/contexts/language-context';
 import { useToast } from '@/hooks/use-toast';
 import { EditProfileDialog } from './edit-profile-dialog';
 import { DocumentManagerDialog } from './document-manager-dialog';
+import { LoanTypeSelectionDialog } from './loan/loan-type-selection-dialog';
+import { GroupSelectionDialog } from './loan/group-selection-dialog';
+import { LoanConsentDialog } from './loan/loan-consent-dialog';
+import { loanApplicationService } from '@/services/loan-application-service';
+import type { LoanType, ConsentData } from '@/types/loan-application-types';
+import { MyApplicationsList } from './loan/my-applications-list';
 
 type Props = {
   activeTab?: string;
@@ -147,6 +154,14 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
   const [showDocumentManager, setShowDocumentManager] = useState(false);
+
+  // Loan application flow state
+  const [showLoanTypeDialog, setShowLoanTypeDialog] = useState(false);
+  const [showGroupSelectionDialog, setShowGroupSelectionDialog] = useState(false);
+  const [showConsentDialog, setShowConsentDialog] = useState(false);
+  const [selectedLoanType, setSelectedLoanType] = useState<LoanType>('individual');
+  const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>();
+  const [selectedGroupName, setSelectedGroupName] = useState<string | undefined>();
 
   const fetchProfile = async () => {
     try {
@@ -284,6 +299,59 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
     }, 1600);
   };
 
+  // Loan application flow handlers
+  const handleApplyForLoan = () => {
+    setShowLoanTypeDialog(true);
+  };
+
+  const handleLoanTypeSelection = async (type: LoanType) => {
+    setSelectedLoanType(type);
+    if (type === 'group') {
+      setShowGroupSelectionDialog(true);
+    } else {
+      setShowConsentDialog(true);
+    }
+  };
+
+  const handleGroupSelection = async (groupId: number) => {
+    setSelectedGroupId(groupId);
+    // Find group name from groups
+    const groups = await loanApplicationService.getUserGroups();
+    const selectedGroup = groups.find(g => g.groupId === groupId);
+    setSelectedGroupName(selectedGroup?.groupName);
+    setShowConsentDialog(true);
+  };
+
+  const handleLoanConsent = async () => {
+    try {
+      const consentData: ConsentData = {
+        loanType: selectedLoanType,
+        groupId: selectedGroupId,
+        agreedToTerms: true,
+        consentTimestamp: new Date().toISOString(),
+      };
+
+      await loanApplicationService.submitLoanConsent(consentData);
+
+      toast({
+        title: 'Consent Recorded',
+        description: 'Redirecting you to loan schemes...',
+      });
+
+      // Navigate to schemes tab
+      setTimeout(() => {
+        router.push('/dashboard?tab=schemes');
+      }, 1000);
+    } catch (error) {
+      console.error('Failed to submit consent:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to record consent. Please try again.',
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       <Tabs value={activeTab} onValueChange={handleTabChange} defaultValue="overview" aria-label="Beneficiary dashboard tabs">
@@ -359,6 +427,17 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
                           {safeT(t, 'request_rescore', 'Request Re-Score')}
                         </>
                       )}
+                    </Button>
+
+                    <Button
+                      variant="default"
+                      size="lg"
+                      className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 px-8 py-6 text-base"
+                      onClick={handleApplyForLoan}
+                      aria-label="Apply for Loan"
+                    >
+                      <Landmark className="mr-2 h-5 w-5" />
+                      Apply for Loan
                     </Button>
 
                     <div className="text-center bg-white/10 backdrop-blur-sm rounded-2xl px-8 py-4 border border-white/20">
@@ -711,6 +790,11 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
           </Card>
         </TabsContent>
 
+        {/* -------------------- Applications -------------------- */}
+        <TabsContent value="applications" className="space-y-8 mt-0 p-1">
+          <MyApplicationsList onApplyNew={handleApplyForLoan} />
+        </TabsContent>
+
         {/* -------------------- Advice -------------------- */}
         <TabsContent value="advice" className="space-y-8 mt-0 p-1">
           <Card>
@@ -737,13 +821,35 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
         <TabsContent value="bill-upload" className="mt-0 p-1">
           <BillUpload onBillConfirmed={handleSaveBill} />
         </TabsContent>
-      </Tabs>
+      </Tabs >
       <DocumentManagerDialog
         open={showDocumentManager}
         onOpenChange={setShowDocumentManager}
         profile={profileData}
         onRefresh={fetchProfile}
       />
-    </div>
+
+      {/* Loan Application Flow Dialogs */}
+      <LoanTypeSelectionDialog
+        open={showLoanTypeDialog}
+        onOpenChange={setShowLoanTypeDialog}
+        onSelectType={handleLoanTypeSelection}
+      />
+
+      <GroupSelectionDialog
+        open={showGroupSelectionDialog}
+        onOpenChange={setShowGroupSelectionDialog}
+        onSelectGroup={handleGroupSelection}
+      />
+
+      <LoanConsentDialog
+        open={showConsentDialog}
+        onOpenChange={setShowConsentDialog}
+        loanType={selectedLoanType}
+        groupId={selectedGroupId}
+        groupName={selectedGroupName}
+        onConsent={handleLoanConsent}
+      />
+    </div >
   );
 }
