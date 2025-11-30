@@ -7,12 +7,12 @@ import java.math.BigDecimal;
 
 @Data
 public class ApplicationRequest {
-    
+
     @NotNull(message = "Requested amount is required")
     private BigDecimal requestedAmount;
-    
+
     private String purpose;
     private Long groupId;
     private Integer schemeId;
+    private Integer tenureMonths;
 }
-

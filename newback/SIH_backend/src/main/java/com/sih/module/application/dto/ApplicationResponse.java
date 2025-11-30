@@ -19,6 +19,7 @@ public class ApplicationResponse {
     private Integer schemeId;
     private BigDecimal requestedAmount;
     private String purpose;
+    private Integer tenureMonths;
     private String status;
     private String rejectionReason;
     private OffsetDateTime stageTimestamp;
@@ -28,4 +29,3 @@ public class ApplicationResponse {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }
-

@@ -9,6 +9,8 @@ import com.sih.module.group.entity.BorrowerGroup;
 import com.sih.module.group.entity.GroupMember;
 import com.sih.module.group.repository.BorrowerGroupRepository;
 import com.sih.module.group.repository.GroupMemberRepository;
+import com.sih.module.application.entity.LoanApplication;
+import com.sih.module.application.repository.LoanApplicationRepository;
 import com.sih.module.beneficiary.repository.BeneficiaryProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +29,7 @@ public class GroupService {
     private final GroupMemberRepository memberRepository;
     private final UserRepository userRepository;
     private final BeneficiaryProfileRepository beneficiaryProfileRepository;
+    private final LoanApplicationRepository applicationRepository;
 
     private static final int MAX_GROUP_MEMBERS = 10;
 
@@ -157,6 +160,25 @@ public class GroupService {
             throw new BadRequestException("Leader cannot leave group. Disband the group instead.");
         }
 
+        // Check for active application
+        List<LoanApplication> applications = applicationRepository.findByGroupGroupId(groupId);
+        LoanApplication memberApp = applications.stream()
+                .filter(app -> app.getUser().getUserId().equals(userId) &&
+                        !List.of("WITHDRAWN", "REJECTED").contains(app.getStatus()))
+                .findFirst()
+                .orElse(null);
+
+        if (memberApp != null) {
+            if ("DRAFT".equals(memberApp.getStatus())) {
+                applicationRepository.delete(memberApp);
+                log.info("Deleted draft application {} for user {} leaving group {}", memberApp.getApplicationId(),
+                        userId, groupId);
+            } else {
+                throw new BadRequestException(
+                        "Cannot leave group while you have an active application in progress. Please withdraw it first.");
+            }
+        }
+
         memberRepository.delete(member);
         log.info("User {} left group {}", userId, groupId);
     }
@@ -214,6 +236,24 @@ public class GroupService {
 
         if ("LEADER".equals(member.getRole())) {
             throw new BadRequestException("Cannot remove leader");
+        }
+
+        // Check for active application
+        List<LoanApplication> applications = applicationRepository.findByGroupGroupId(groupId);
+        LoanApplication memberApp = applications.stream()
+                .filter(app -> app.getUser().getUserId().equals(memberUserId) &&
+                        !List.of("WITHDRAWN", "REJECTED").contains(app.getStatus()))
+                .findFirst()
+                .orElse(null);
+
+        if (memberApp != null) {
+            if ("DRAFT".equals(memberApp.getStatus())) {
+                applicationRepository.delete(memberApp);
+                log.info("Deleted draft application {} for user {} removed from group {}", memberApp.getApplicationId(),
+                        memberUserId, groupId);
+            } else {
+                throw new BadRequestException("Cannot remove member who has an active application in progress.");
+            }
         }
 
         memberRepository.delete(member);
