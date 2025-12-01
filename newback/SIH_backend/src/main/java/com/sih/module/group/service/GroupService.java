@@ -30,6 +30,7 @@ public class GroupService {
     private final UserRepository userRepository;
     private final BeneficiaryProfileRepository beneficiaryProfileRepository;
     private final LoanApplicationRepository applicationRepository;
+    private final com.sih.module.loan.repository.LoanRepository loanRepository;
 
     private static final int MAX_GROUP_MEMBERS = 10;
 
@@ -110,6 +111,14 @@ public class GroupService {
             throw new BadRequestException("Only group leader can disband group");
         }
 
+        // Check if any member has an active loan
+        boolean hasActiveLoans = loanRepository.existsByGroupGroupIdAndLoanStatus(groupId, "ACTIVE") ||
+                loanRepository.existsByGroupGroupIdAndLoanStatus(groupId, "OVERDUE");
+
+        if (hasActiveLoans) {
+            throw new BadRequestException("Cannot disband group while there are active or overdue loans.");
+        }
+
         group.setIsActive(false);
         groupRepository.save(group);
         log.info("Group disbanded: {}", groupId);
@@ -158,6 +167,14 @@ public class GroupService {
 
         if ("LEADER".equals(member.getRole())) {
             throw new BadRequestException("Leader cannot leave group. Disband the group instead.");
+        }
+
+        // Check for active loan
+        boolean hasActiveLoan = loanRepository.existsByUserUserIdAndLoanStatus(userId, "ACTIVE") ||
+                loanRepository.existsByUserUserIdAndLoanStatus(userId, "OVERDUE");
+
+        if (hasActiveLoan) {
+            throw new BadRequestException("Cannot leave group while you have an active or overdue loan.");
         }
 
         // Check for active application
@@ -236,6 +253,14 @@ public class GroupService {
 
         if ("LEADER".equals(member.getRole())) {
             throw new BadRequestException("Cannot remove leader");
+        }
+
+        // Check for active loan
+        boolean hasActiveLoan = loanRepository.existsByUserUserIdAndLoanStatus(memberUserId, "ACTIVE") ||
+                loanRepository.existsByUserUserIdAndLoanStatus(memberUserId, "OVERDUE");
+
+        if (hasActiveLoan) {
+            throw new BadRequestException("Cannot remove member who has an active or overdue loan.");
         }
 
         // Check for active application
@@ -330,5 +355,25 @@ public class GroupService {
                 .status(member.getStatus())
                 .joinedAt(member.getJoinedAt())
                 .build();
+    }
+
+    @Transactional
+    public void updateGroupStatus(Long groupId, String status) {
+        BorrowerGroup group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResourceNotFoundException("Group not found"));
+
+        if (!group.getGroupStatus().equals(status)) {
+            group.setGroupStatus(status);
+
+            // If Defaulted, maybe reduce score significantly
+            if ("DEFAULTED".equals(status)) {
+                group.setGroupScore(group.getGroupScore().subtract(java.math.BigDecimal.valueOf(50)));
+            } else if ("AT_RISK".equals(status)) {
+                group.setGroupScore(group.getGroupScore().subtract(java.math.BigDecimal.valueOf(10)));
+            }
+
+            groupRepository.save(group);
+            log.info("Group {} status updated to {}", groupId, status);
+        }
     }
 }
