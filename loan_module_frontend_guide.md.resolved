@@ -1,0 +1,110 @@
+# Loan Module Integration Guide
+
+This document outlines the workflow and API integration details for the Loan Module. It is designed to help the frontend team implement the Loan Dashboard and Repayment features.
+
+## 1. Overview
+
+The Loan Module manages the lifecycle of a loan after an application is **SANCTIONED**.
+Key features include:
+*   **Loan Creation**: Automatic conversion of sanctioned applications.
+*   **Dashboard**: Viewing active loans, outstanding balances, and next EMI.
+*   **Repayment Schedule**: Viewing the amortization schedule.
+*   **Repayments**: Making EMI payments or partial prepayments with options for **Tenure Reduction** or **EMI Reduction**.
+*   **Foreclosure**: Closing the loan by paying the full outstanding amount.
+
+---
+
+## 2. API Endpoints
+
+Base URL: `/api/v1/loans`
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` | Get all loans for the logged-in user. |
+| `GET` | `/{id}` | Get details of a specific loan. |
+| `GET` | `/{id}/projected-schedule` | Get the full amortization schedule (past + future). |
+| `POST` | `/{id}/repay` | Make a repayment (EMI or Prepayment). |
+| `POST` | `/{id}/foreclose` | Foreclose the loan. |
+
+---
+
+## 3. Workflow Details
+
+### A. Loan Dashboard (My Loans)
+
+**Goal**: Display a list of active loans and their key details.
+
+1.  **Fetch Loans**:
+    *   Call `GET /api/v1/loans`
+    *   **Response**: Array of Loan objects.
+    *   **Key Fields to Display**:
+        *   `loanId`: Loan Reference Number.
+        *   `outstandingPrincipal`: Current balance.
+        *   `monthlyEmi`: Next EMI amount.
+        *   `nextPaymentDate`: Due date for next EMI.
+        *   `loanStatus`: Status (ACTIVE, CLOSED, etc.).
+        *   `remainingTenure`: Months left.
+
+### B. Repayment Schedule
+
+**Goal**: Show the user their payment history and future projected payments.
+
+1.  **Fetch Schedule**:
+    *   Call `GET /api/v1/loans/{id}/projected-schedule`
+    *   **Response**: Array of Schedule objects.
+    *   **Key Fields**:
+        *   `installmentNumber`: 1, 2, 3...
+        *   `dueDate`: Date the payment is expected.
+        *   `emiAmount`: Total amount to pay.
+        *   `principalComponent`: Part of EMI going to principal.
+        *   `interestComponent`: Part of EMI going to interest.
+        *   `outstandingPrincipal`: Balance after this payment.
+        *   `status`: `PAID`, `UPCOMING`, `OVERDUE`.
+
+### C. Making a Repayment (EMI / Prepayment)
+
+**Goal**: Allow user to pay their EMI or make an extra payment.
+
+1.  **User Action**: User clicks "Pay" button.
+2.  **Input**: User enters `amount`.
+3.  **Logic**:
+    *   If `amount` > `monthlyEmi`, show **Adjustment Mode** dropdown.
+    *   **Adjustment Modes**:
+        *   `TENURE_REDUCTION` (Default): Monthly EMI stays same, loan ends earlier.
+        *   `EMI_REDUCTION`: Loan end date stays same, monthly EMI reduces.
+4.  **API Call**:
+    *   Call `POST /api/v1/loans/{id}/repay`
+    *   **Payload**:
+        ```json
+        {
+          "amount": 5000,
+          "mode": "UPI", // or ONLINE, CASH
+          "adjustmentMode": "TENURE_REDUCTION", // Optional, defaults to TENURE_REDUCTION
+          "transactionRef": "TXN123456789"
+        }
+        ```
+5.  **Post-Action**: Refresh Loan Details and Schedule to show updated values.
+
+### D. Foreclosure
+
+**Goal**: Allow user to close the loan completely.
+
+1.  **User Action**: User clicks "Foreclose Loan".
+2.  **Confirmation**: Show a confirmation dialog warning that this will pay off the entire balance.
+3.  **API Call**:
+    *   Call `POST /api/v1/loans/{id}/foreclose`
+    *   **Payload**: Empty body (or minimal verification data if needed).
+4.  **Post-Action**:
+    *   Loan Status changes to `FORECLOSED` (or `CLOSED`).
+    *   Outstanding Principal becomes `0`.
+    *   Redirect user to dashboard or show success message.
+
+---
+
+## 4. Frontend Implementation Tips
+
+*   **State Management**: When a payment is successful, invalidate the queries for both the *Loan Details* and the *Schedule* so they re-fetch the new calculated values immediately.
+*   **Validation**: Ensure the payment amount is at least the current EMI amount (unless it's the very last payment).
+*   **Visual Feedback**:
+    *   For `TENURE_REDUCTION`, highlight that the "Remaining Tenure" has decreased.
+    *   For `EMI_REDUCTION`, highlight that the "Monthly EMI" has decreased.
