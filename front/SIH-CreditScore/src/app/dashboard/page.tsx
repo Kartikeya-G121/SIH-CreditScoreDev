@@ -279,7 +279,13 @@ export default function DashboardPage() {
         }
         if (tab === 'apply-loan') {
           const schemeId = searchParams.get('scheme');
-          return <ApplyLoanPage preSelectedSchemeId={schemeId ? parseInt(schemeId) : undefined} />;
+          const applicationId = searchParams.get('applicationId');
+          return (
+            <ApplyLoanPage
+              preSelectedSchemeId={schemeId ? parseInt(schemeId) : undefined}
+              applicationId={applicationId ? parseInt(applicationId) : undefined}
+            />
+          );
         }
         return <BeneficiaryDashboard activeTab={tab} />;
       case 'officer':

@@ -14,14 +14,17 @@ export async function fetchFromApi(endpoint: string, options: RequestInit = {}) 
     (headers as any)['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const fullUrl = `${API_URL}${endpoint}`;
+  console.log(`Fetching: ${fullUrl}`, options);
+
+  const response = await fetch(fullUrl, {
     ...options,
     headers,
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API call failed: ${response.statusText}`);
+    throw new Error(errorData.error || errorData.message || `API call failed: ${response.statusText}`);
   }
 
   return response.json();

@@ -8,19 +8,23 @@ import { CheckCircle2, Circle, Users, User } from 'lucide-react';
 import { ApplicationFormStep } from './application-form-step';
 import { BeneficiaryDetailsStep } from './beneficiary-details-step';
 import { ConsumptionUploadStep } from './consumption-upload-step';
+import { ReviewApplicationStep } from './review-application-step';
 import { GroupSelectionStep } from './group-selection-step';
 import { GroupLoanDashboard } from './group-loan-dashboard';
 import type { ApplicationFormData, BeneficiaryDetailsData, ApplicationWorkflowState, LoanType } from '@/types/loan-application-types';
 import { useToast } from '@/hooks/use-toast';
+import { loanApplicationService } from '@/services/loan-application-service';
+import { Loader2 } from 'lucide-react';
 
 interface ApplyLoanPageProps {
     preSelectedSchemeId?: number;
     groupId?: number;
+    applicationId?: number;
 }
 
 type WorkflowView = 'LOAN_TYPE_SELECT' | 'GROUP_SELECT' | 'GROUP_DASHBOARD' | 'APPLICATION_WIZARD';
 
-export function ApplyLoanPage({ preSelectedSchemeId, groupId }: ApplyLoanPageProps) {
+export function ApplyLoanPage({ preSelectedSchemeId, groupId, applicationId }: ApplyLoanPageProps) {
     const router = useRouter();
     const { toast } = useToast();
 
@@ -28,6 +32,8 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId }: ApplyLoanPagePro
     const [currentView, setCurrentView] = useState<WorkflowView>('LOAN_TYPE_SELECT');
     const [loanType, setLoanType] = useState<LoanType>('INDIVIDUAL');
     const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>(groupId);
+    const [isLoadingApplication, setIsLoadingApplication] = useState(false);
+    const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
 
     // State for the Application Wizard (Steps 1-3)
     const [workflowState, setWorkflowState] = useState<ApplicationWorkflowState>({
@@ -41,16 +47,64 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId }: ApplyLoanPagePro
 
     // Initialize based on props
     useEffect(() => {
-        if (groupId) {
-            setLoanType('GROUP');
-            setSelectedGroupId(groupId);
-            setCurrentView('GROUP_DASHBOARD');
-        } else if (preSelectedSchemeId) {
-            // If scheme is pre-selected, assume individual loan for now or prompt user
-            // For simplicity, let's start with Loan Type selection even if scheme is selected
-            setCurrentView('LOAN_TYPE_SELECT');
-        }
-    }, [groupId, preSelectedSchemeId]);
+        const loadApplication = async () => {
+            if (applicationId) {
+                try {
+                    setIsLoadingApplication(true);
+                    const application = await loanApplicationService.getApplicationById(applicationId);
+
+                    // Set loan type and group ID
+                    if (application.groupId) {
+                        setLoanType('GROUP');
+                        setSelectedGroupId(application.groupId);
+                    } else {
+                        setLoanType('INDIVIDUAL');
+                    }
+
+                    // Check if application is already submitted
+                    const isReadOnly = application.status !== 'DRAFT';
+                    setIsReadOnlyMode(isReadOnly);
+
+                    // Set workflow state
+                    setWorkflowState(prev => ({
+                        ...prev,
+                        currentStep: isReadOnly ? 4 : 1, // Start at step 4 (Review) if read-only, else step 1
+                        applicationId: application.applicationId,
+                        formData: {
+                            schemeId: application.schemeId || 0,
+                            requestedAmount: application.requestedAmount,
+                            purpose: application.purpose || '',
+                            tenureMonths: application.tenureMonths || 12,
+                            groupId: application.groupId,
+                        },
+                        preSelectedSchemeId: application.schemeId,
+                    }));
+
+                    // Go directly to wizard
+                    setCurrentView('APPLICATION_WIZARD');
+                } catch (error) {
+                    console.error('Failed to load application:', error);
+                    toast({
+                        variant: 'destructive',
+                        title: 'Error',
+                        description: 'Failed to load application details.',
+                    });
+                } finally {
+                    setIsLoadingApplication(false);
+                }
+            } else if (groupId) {
+                setLoanType('GROUP');
+                setSelectedGroupId(groupId);
+                setCurrentView('GROUP_DASHBOARD');
+            } else if (preSelectedSchemeId) {
+                // If scheme is pre-selected, assume individual loan for now or prompt user
+                // For simplicity, let's start with Loan Type selection even if scheme is selected
+                setCurrentView('LOAN_TYPE_SELECT');
+            }
+        };
+
+        loadApplication();
+    }, [groupId, preSelectedSchemeId, applicationId, toast]);
 
     // --- Workflow Handlers ---
 
@@ -104,6 +158,20 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId }: ApplyLoanPagePro
         setWorkflowState(prev => ({
             ...prev,
             currentStep: 2,
+        }));
+    };
+
+    const handleStep3Next = () => {
+        setWorkflowState(prev => ({
+            ...prev,
+            currentStep: 4,
+        }));
+    };
+
+    const handleStep4Back = () => {
+        setWorkflowState(prev => ({
+            ...prev,
+            currentStep: 3,
         }));
     };
 
@@ -183,9 +251,19 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId }: ApplyLoanPagePro
         { number: 1, title: 'Application Details', description: 'Loan information' },
         { number: 2, title: 'Beneficiary Details', description: 'Personal information' },
         { number: 3, title: 'Upload Bills', description: 'Consumption data' },
+        { number: 4, title: 'Review & Submit', description: 'Finalize application' },
     ];
 
     // --- Main Render ---
+
+    if (isLoadingApplication) {
+        return (
+            <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Loading application details...</p>
+            </div>
+        );
+    }
 
     if (currentView === 'LOAN_TYPE_SELECT') {
         return renderLoanTypeSelection();
@@ -311,8 +389,17 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId }: ApplyLoanPagePro
                     <ConsumptionUploadStep
                         applicationId={workflowState.applicationId}
                         onBack={handleStep3Back}
-                        onSubmit={handleApplicationSubmit}
+                        onNext={handleStep3Next}
                         isGroupLoan={loanType === 'GROUP'}
+                    />
+                )}
+
+                {workflowState.currentStep === 4 && workflowState.applicationId && (
+                    <ReviewApplicationStep
+                        applicationId={workflowState.applicationId}
+                        onBack={handleStep4Back}
+                        onSubmit={handleApplicationSubmit}
+                        isReadOnly={isReadOnlyMode}
                     />
                 )}
             </div>

@@ -222,5 +222,20 @@ export const loanApplicationService = {
             throw error;
         }
     },
+
+    /**
+     * Withdraw an application
+     */
+    async withdrawApplication(applicationId: number): Promise<ApplicationResponse> {
+        try {
+            const response = await fetchFromApi(`/applications/${applicationId}/withdraw`, {
+                method: 'POST',
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Failed to withdraw application:', error);
+            throw error;
+        }
+    },
 };
 

@@ -27,7 +27,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 interface ConsumptionUploadStepProps {
     applicationId: number;
     onBack: () => void;
-    onSubmit: () => void;
+    onBack: () => void;
+    onNext: () => void;
     isGroupLoan?: boolean;
 }
 
@@ -48,7 +49,7 @@ const UPLOAD_LIMITS: Partial<Record<BillCategory, number>> = {
 const MAX_FILE_SIZE_MB = 10;
 const ALLOWED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
 
-export function ConsumptionUploadStep({ applicationId, onBack, onSubmit, isGroupLoan }: ConsumptionUploadStepProps) {
+export function ConsumptionUploadStep({ applicationId, onBack, onNext, isGroupLoan }: ConsumptionUploadStepProps) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -187,21 +188,14 @@ export function ConsumptionUploadStep({ applicationId, onBack, onSubmit, isGroup
                 await Promise.all(uploadPromises);
             }
 
-            // 2. Submit application
-            await loanApplicationService.submitApplication(applicationId);
-
-            toast({
-                title: 'Application Submitted',
-                description: 'Your loan application has been submitted successfully!',
-            });
-
-            onSubmit();
+            // 2. Proceed to next step (Review)
+            onNext();
         } catch (error) {
-            console.error('Failed to submit application:', error);
+            console.error('Failed to upload bills:', error);
             toast({
                 variant: 'destructive',
-                title: 'Submission Failed',
-                description: 'Failed to submit your application. Please try again.',
+                title: 'Upload Failed',
+                description: 'Failed to upload bills. Please try again.',
             });
         } finally {
             setIsSubmitting(false);
@@ -363,9 +357,9 @@ export function ConsumptionUploadStep({ applicationId, onBack, onSubmit, isGroup
                                 <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
+                                            <AlertDialogTitle>Confirm Uploads</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                Submitting will upload all newly added bills and finalize this step. You will not be able to edit after submission.
+                                                Proceeding will upload all newly added bills. You can review your application in the next step.
 
                                                 {categoryStates.some((s: CategoryBillsState) => s.uploadedFiles.length > 0) && (
                                                     <div className="mt-4 p-3 bg-muted rounded-md text-sm">
@@ -386,7 +380,7 @@ export function ConsumptionUploadStep({ applicationId, onBack, onSubmit, isGroup
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleConfirmSubmit}>Confirm & Submit</AlertDialogAction>
+                                            <AlertDialogAction onClick={handleConfirmSubmit}>Confirm & Proceed</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -405,12 +399,12 @@ export function ConsumptionUploadStep({ applicationId, onBack, onSubmit, isGroup
                     {isSubmitting ? (
                         <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            {isGroupLoan ? 'Saving Draft...' : 'Submitting...'}
+                            Uploading...
                         </>
                     ) : (
                         <>
-                            <FileText className="mr-2 h-4 w-4" />
-                            {isGroupLoan ? 'Save Draft' : 'Submit Application'}
+                            <ArrowRight className="mr-2 h-4 w-4" />
+                            Next: Review
                         </>
                     )}
                 </Button>

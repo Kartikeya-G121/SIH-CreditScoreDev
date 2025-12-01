@@ -20,6 +20,7 @@ export interface LoanApplicationRequest {
   groupId?: number;
   schemeId?: number;
   requestedAmount?: number;
+  tenureMonths?: number;
 }
 
 // ==================== Multi-Step Application Types ====================
@@ -28,6 +29,7 @@ export interface LoanApplicationRequest {
 export interface ApplicationFormData {
   schemeId: number;
   requestedAmount: number;
+  tenureMonths: number;
   purpose: string;
   groupId?: number;
 }
@@ -94,6 +96,7 @@ export interface ApplicationResponse {
   schemeId?: number;
   requestedAmount: number;
   purpose?: string;
+  tenureMonths?: number;
   status: string; // 'DRAFT', 'SUBMITTED', 'SCORING', 'APPROVED', 'REJECTED', 'SANCTIONED', 'WITHDRAWN'
   rejectionReason?: string;
   stageTimestamp: string;

@@ -1,25 +1,40 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, FileText, Users, ArrowRight, Plus } from 'lucide-react';
+import { Loader2, FileText, Users, ArrowRight, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { loanApplicationService } from '@/services/loan-application-service';
 import type { ApplicationResponse } from '@/types/loan-application-types';
 import { useToast } from '@/hooks/use-toast';
 import { GroupLoanDashboard } from './group-loan-dashboard';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface MyApplicationsListProps {
     onApplyNew: () => void;
 }
 
 export function MyApplicationsList({ onApplyNew }: MyApplicationsListProps) {
+    const router = useRouter();
     const { toast } = useToast();
     const [applications, setApplications] = useState<ApplicationResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+    const [withdrawId, setWithdrawId] = useState<number | null>(null);
+    const [isWithdrawing, setIsWithdrawing] = useState(false);
 
     const fetchApplications = async () => {
         try {
@@ -52,8 +67,36 @@ export function MyApplicationsList({ onApplyNew }: MyApplicationsListProps) {
                 return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Approved</Badge>;
             case 'REJECTED':
                 return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Rejected</Badge>;
+            case 'WITHDRAWN':
+                return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Withdrawn</Badge>;
+            case 'SANCTIONED':
+                return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Sanctioned</Badge>;
             default:
                 return <Badge variant="secondary">{status}</Badge>;
+        }
+    };
+
+    const handleWithdraw = async () => {
+        if (!withdrawId) return;
+
+        try {
+            setIsWithdrawing(true);
+            await loanApplicationService.withdrawApplication(withdrawId);
+            toast({
+                title: 'Application Withdrawn',
+                description: 'Your application has been successfully withdrawn.',
+            });
+            fetchApplications();
+        } catch (error) {
+            console.error('Failed to withdraw application:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Withdrawal Failed',
+                description: 'Failed to withdraw application. Please try again.',
+            });
+        } finally {
+            setIsWithdrawing(false);
+            setWithdrawId(null);
         }
     };
 
@@ -155,12 +198,28 @@ export function MyApplicationsList({ onApplyNew }: MyApplicationsListProps) {
                                                     className="text-primary hover:text-primary/80"
                                                     onClick={() => setSelectedGroupId(app.groupId || null)}
                                                 >
-                                                    View Status
-                                                    <ArrowRight className="ml-1 h-4 w-4" />
+                                                    View Group
+                                                    <ArrowRight className="ml-2 h-4 w-4" />
                                                 </Button>
                                             ) : (
-                                                <Button variant="ghost" size="sm" disabled>
-                                                    View Details
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-primary hover:text-primary/80"
+                                                    onClick={() => router.push(`/dashboard?tab=apply-loan&applicationId=${app.applicationId}`)}
+                                                >
+                                                    {app.status === 'DRAFT' ? 'Finalize Draft' : 'View Details'}
+                                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                                </Button>
+                                            )}
+                                            {app.status === 'DRAFT' && !app.groupId && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-destructive hover:text-destructive/80 ml-2"
+                                                    onClick={() => setWithdrawId(app.applicationId)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             )}
                                         </TableCell>
@@ -171,6 +230,34 @@ export function MyApplicationsList({ onApplyNew }: MyApplicationsListProps) {
                     </div>
                 )}
             </CardContent>
+
+            <AlertDialog open={!!withdrawId} onOpenChange={(open) => !open && setWithdrawId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Withdraw Application?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to withdraw this application? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isWithdrawing}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleWithdraw}
+                            disabled={isWithdrawing}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {isWithdrawing ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Withdrawing...
+                                </>
+                            ) : (
+                                'Withdraw Application'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card>
     );
 }

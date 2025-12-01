@@ -34,6 +34,7 @@ const formSchema = z.object({
         required_error: 'Please enter the requested amount',
     }).positive('Amount must be greater than 0'),
     purpose: z.string().min(10, 'Please provide at least 10 characters describing the loan purpose'),
+    tenureMonths: z.number().optional(),
 });
 
 export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, initialData, isGroupLoan = false }: ApplicationFormStepProps) {
@@ -50,6 +51,7 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
             schemeId: preSelectedSchemeId,
             requestedAmount: undefined,
             purpose: '',
+            tenureMonths: 12,
         },
     });
 
@@ -86,6 +88,7 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
                         setSelectedScheme(scheme);
                         form.setValue('schemeId', preSelectedSchemeId);
                         setTenureMonths(scheme.minTenureMonths);
+                        form.setValue('tenureMonths', scheme.minTenureMonths);
                     }
                 }
             } catch (error) {
@@ -109,6 +112,7 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
         setSelectedScheme(scheme || null);
         if (scheme) {
             setTenureMonths(scheme.minTenureMonths);
+            form.setValue('tenureMonths', scheme.minTenureMonths);
         }
         form.setValue('schemeId', parseInt(schemeId));
     };
@@ -147,6 +151,7 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
                 schemeId: values.schemeId,
                 requestedAmount: values.requestedAmount,
                 purpose: values.purpose,
+                tenureMonths: tenureMonths,
                 groupId: groupId,
             };
 
@@ -162,6 +167,7 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
                 schemeId: values.schemeId,
                 requestedAmount: values.requestedAmount,
                 purpose: values.purpose,
+                tenureMonths: tenureMonths,
                 groupId: groupId,
             };
 
@@ -170,8 +176,8 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
             console.error('Failed to create draft application:', error);
             toast({
                 variant: 'destructive',
-                title: 'Error',
-                description: 'Failed to save application draft. Please try again.',
+                title: 'Application Failed',
+                description: error instanceof Error ? error.message : 'Failed to save application draft. Please try again.',
             });
         } finally {
             setIsSubmitting(false);
@@ -265,7 +271,10 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
                                                 min={selectedScheme.minTenureMonths}
                                                 max={selectedScheme.maxTenureMonths}
                                                 step={1}
-                                                onValueChange={(value) => setTenureMonths(value[0])}
+                                                onValueChange={(value) => {
+                                                    setTenureMonths(value[0]);
+                                                    form.setValue('tenureMonths', value[0]);
+                                                }}
                                                 className="py-2"
                                             />
                                             <div className="flex justify-between text-xs text-muted-foreground">
