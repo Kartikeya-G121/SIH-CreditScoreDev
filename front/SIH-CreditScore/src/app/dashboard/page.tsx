@@ -24,10 +24,18 @@ import NotificationsCenter from '@/components/dashboards/notifications-center';
 import ScoreExplainability from '@/components/dashboards/score-explainability';
 import { GroupDashboard } from '@/components/dashboards/group/group-dashboard';
 import { SchemesDashboard } from '@/components/dashboards/scheme/schemes-dashboard';
+<<<<<<< HEAD
 import LoanDashboard from '@/components/dashboards/loan-dashboard';
 import {
   LayoutDashboard,
   Users,
+=======
+import { ApplyLoanPage } from '@/components/dashboards/loan/apply-loan-page';
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+>>>>>>> 61964b08988c0d29c26197d75bc4030f035c9d24
   BarChart3,
   Settings,
   HelpCircle,
@@ -37,7 +45,10 @@ import {
   Brain,
   ShieldAlert,
   Landmark,
+<<<<<<< HEAD
   IndianRupee,
+=======
+>>>>>>> 61964b08988c0d29c26197d75bc4030f035c9d24
 } from 'lucide-react';
 import { UserNav } from '@/components/layout/user-nav';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -63,11 +74,21 @@ function DashboardSidebar() {
   const { t } = useLanguage();
   const activeTab = searchParams.get('tab') || (user?.role === 'beneficiary' ? 'overview' : 'dashboard');
 
+<<<<<<< HEAD
   const handleNav = (item: any) => {
     if (item.href) {
       router.push(item.href);
     } else {
       router.push(`/dashboard?tab=${item.id}`);
+=======
+  const handleNav = (href: string) => {
+    if (href.startsWith('#')) {
+      const tab = href.substring(1);
+      router.push(`/dashboard?tab=${tab}`);
+    } else {
+      toast({ title: `Navigating to ${href.substring(1)}` });
+      // In a real app, you would use: router.push(href);
+>>>>>>> 61964b08988c0d29c26197d75bc4030f035c9d24
     }
   };
 
@@ -84,6 +105,7 @@ function DashboardSidebar() {
         label: t('sidebar_repayments'),
       },
       {
+<<<<<<< HEAD
         id: 'my-loans',
         icon: <IndianRupee />,
         label: 'My Loans',
@@ -101,6 +123,8 @@ function DashboardSidebar() {
         label: 'Apply for Loan',
       },
       {
+=======
+>>>>>>> 61964b08988c0d29c26197d75bc4030f035c9d24
         id: 'profile',
         icon: <Users />,
         label: t('sidebar_profile'),
@@ -137,6 +161,19 @@ function DashboardSidebar() {
         label: 'Loan Schemes',
       },
       {
+<<<<<<< HEAD
+=======
+        id: 'applications',
+        icon: <FileText />,
+        label: 'My Applications',
+      },
+      {
+        id: 'apply-loan',
+        icon: <Landmark />,
+        label: 'Apply for Loan',
+      },
+      {
+>>>>>>> 61964b08988c0d29c26197d75bc4030f035c9d24
         id: 'notifications',
         icon: <BellRing />,
         label: t('sidebar_notifications'),
@@ -166,7 +203,11 @@ function DashboardSidebar() {
     ],
   };
 
+<<<<<<< HEAD
   const currentNavItems = user ? navItems[user.role as keyof typeof navItems] : [];
+=======
+  const currentNavItems = user ? navItems[user.role] : [];
+>>>>>>> 61964b08988c0d29c26197d75bc4030f035c9d24
 
   return (
     <Sidebar>
@@ -175,6 +216,7 @@ function DashboardSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
+<<<<<<< HEAD
           {currentNavItems.map((item) => {
             const isHighlight = item.id === 'apply-loan';
             return (
@@ -190,6 +232,19 @@ function DashboardSidebar() {
               </SidebarMenuItem>
             );
           })}
+=======
+          {currentNavItems.map((item) => (
+            <SidebarMenuItem key={item.id}>
+              <SidebarMenuButton
+                onClick={() => handleNav(`#${item.id}`)}
+                isActive={activeTab === item.id}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+>>>>>>> 61964b08988c0d29c26197d75bc4030f035c9d24
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="mt-auto">
@@ -286,8 +341,14 @@ export default function DashboardPage() {
         if (tab === 'schemes') {
           return <SchemesDashboard />;
         }
+<<<<<<< HEAD
         if (tab === 'my-loans') {
           return <LoanDashboard />;
+=======
+        if (tab === 'apply-loan') {
+          const schemeId = searchParams.get('scheme');
+          return <ApplyLoanPage preSelectedSchemeId={schemeId ? parseInt(schemeId) : undefined} />;
+>>>>>>> 61964b08988c0d29c26197d75bc4030f035c9d24
         }
         return <BeneficiaryDashboard activeTab={tab} />;
       case 'officer':
