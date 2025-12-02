@@ -1,0 +1,158 @@
+spring:
+  application:
+    name: income-processing-system
+  config:
+    import: optional:file:.env[.properties]
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/income_processing_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+    default-encoding: UTF-8
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000 # 1 hour default
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# JWT Configuration
+app:
+  jwt:
+    secret: ${JWT_SECRET:your-secret-key-change-in-production-min-256-bits-please-use-a-very-long-secret-key-for-security-purposes}
+    expiration: 86400000 # 24 hours (access token)
+    refresh-expiration: 604800000 # 7 days (refresh token)
+    password-reset:
+      token-expiry-hours: 24
+      base-url: ${APP_BASE_URL:http://localhost:3000}
+
+    file-storage:
+      type: ${STORAGE_TYPE:local} # local or s3
+      local-path: ${STORAGE_LOCAL_PATH:./uploads}
+
+    pagination:
+      default-page-size: 10
+      max-page-size: 100
+
+  sms:
+    fast2sms:
+      url: https://www.fast2sms.com/dev/bulkV2
+      api-key: ${FAST2SMS_API_KEY:}
+
+# AWS S3 Configuration (Optional - can use MinIO)
+aws:
+  s3:
+    enabled: ${S3_ENABLED:false}
+    bucket-name: ${S3_BUCKET:income-processing-docs}
+    region: ${S3_REGION:us-east-1}
+    access-key: ${S3_ACCESS_KEY:}
+    secret-key: ${S3_SECRET_KEY:}
+    endpoint: ${S3_ENDPOINT:} # For MinIO: http://localhost:9000
+
+supabase:
+  s3:
+    endpoint: ${SUPABASE_S3_ENDPOINT}
+    region: ${SUPABASE_S3_REGION}
+    access-key: ${SUPABASE_S3_ACCESS_KEY}
+    secret-key: ${SUPABASE_S3_SECRET_KEY}
+
+  bucket: ${SUPABASE_BUCKET}
+  url: ${SUPABASE_URL}
+  public-url: ${SUPABASE_PUBLIC_URL}
+
+# OCR Service Configuration
+ocr:
+  service:
+    url: ${OCR_SERVICE_URL:http://localhost:5000}
+    enabled: ${OCR_SERVICE_ENABLED:true}
+    timeout: 60000 # 60 seconds
+
+# BBPS Service Configuration
+bbps:
+  mock:
+    enabled: ${BBPS_MOCK_ENABLED:true}
+  verification:
+    threshold: 0.7
+
+# Application Configuration
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.sih: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    mail:
+      enabled: false # Disable mail health check if SMTP not configured
