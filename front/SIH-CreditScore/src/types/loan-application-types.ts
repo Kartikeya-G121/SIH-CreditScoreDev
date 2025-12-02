@@ -119,11 +119,19 @@ export interface ApplicationWorkflowState {
   createdAt?: string;
 }
 
+export interface ApplicationDraftRequest {
+  schemeId: number;
+  requestedAmount: number;
+  purpose: string;
+  tenureMonths: number;
+  groupId?: number;
+}
+
 export interface GroupMemberApplicationStatus {
   userId: number;
   userName: string;
   role: 'LEADER' | 'MEMBER';
-  status: 'NOT_STARTED' | 'DRAFT' | 'SUBMITTED';
+  status: 'NOT_STARTED' | 'DRAFT' | 'SUBMITTED' | 'SCORING' | 'APPROVED' | 'REJECTED' | 'SANCTIONED' | 'WITHDRAWN';
   amount?: number;
   applicationId?: number;
 }
@@ -140,6 +148,6 @@ export interface GroupApplicationStatusResponse {
   userId: number;
   userName: string;
   role: 'LEADER' | 'MEMBER';
-  status: 'NOT_APPLIED' | 'DRAFT' | 'SUBMITTED';
+  status: 'NOT_APPLIED' | 'DRAFT' | 'SUBMITTED' | 'SCORING' | 'APPROVED' | 'REJECTED' | 'SANCTIONED' | 'WITHDRAWN';
   applicationId: number | null;
 }

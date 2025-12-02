@@ -17,4 +17,6 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
     List<Loan> findByNextPaymentDateBeforeAndLoanStatus(java.time.LocalDate date, String status);
 
     boolean existsByGroupGroupIdAndLoanStatus(Long groupId, String loanStatus);
+
+    List<Loan> findByGroupGroupId(Long groupId);
 }

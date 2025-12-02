@@ -309,7 +309,7 @@ export default function OfficerPanel() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              UDAAN Application Timeline
+              Composite Score Application Timeline
             </CardTitle>
             <CardDescription>Real-time processing status with AI verification</CardDescription>
           </CardHeader>
@@ -320,13 +320,12 @@ export default function OfficerPanel() {
                 {verificationTimeline.map((step, index) => (
                   <li key={step.id} className="flex gap-4 relative">
                     <div
-                      className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${
-                        step.status === 'done'
-                          ? 'bg-emerald-500 border-emerald-500 text-white'
-                          : step.status === 'current'
-                            ? 'bg-amber-500 border-amber-500 text-white animate-pulse'
-                            : 'bg-background border-muted text-muted-foreground'
-                      }`}
+                      className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${step.status === 'done'
+                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                        : step.status === 'current'
+                          ? 'bg-amber-500 border-amber-500 text-white animate-pulse'
+                          : 'bg-background border-muted text-muted-foreground'
+                        }`}
                     >
                       {step.status === 'done' ? (
                         <CheckCircle className="h-4 w-4" />
@@ -382,7 +381,7 @@ export default function OfficerPanel() {
                         variant={riskVariant[profile.risk]}
                         className={
                           riskColorClass[
-                            profile.risk as keyof typeof riskColorClass
+                          profile.risk as keyof typeof riskColorClass
                           ]
                         }
                       >
@@ -440,7 +439,7 @@ export default function OfficerPanel() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart className="h-5 w-5" />
-              UDAAN Risk Distribution
+              Composite Score Risk Distribution
             </CardTitle>
             <CardDescription>AI-powered risk categorization</CardDescription>
           </CardHeader>
@@ -455,9 +454,9 @@ export default function OfficerPanel() {
                 <RechartsTooltip
                   content={<ChartTooltipContent nameKey="name" hideLabel />}
                 />
-                <Pie 
-                  data={riskDistribution} 
-                  dataKey="value" 
+                <Pie
+                  data={riskDistribution}
+                  dataKey="value"
                   nameKey="name"
                   innerRadius={60}
                   outerRadius={100}
@@ -472,8 +471,8 @@ export default function OfficerPanel() {
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
               {riskDistribution.map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  <div 
-                    className="h-3 w-3 rounded-full" 
+                  <div
+                    className="h-3 w-3 rounded-full"
                     style={{ backgroundColor: item.fill }}
                   ></div>
                   <span className="font-medium">{item.name}</span>
@@ -597,7 +596,7 @@ export default function OfficerPanel() {
                         variant={riskVariant[beneficiary.risk]}
                         className={
                           riskColorClass[
-                            beneficiary.risk as keyof typeof riskColorClass
+                          beneficiary.risk as keyof typeof riskColorClass
                           ]
                         }
                       >

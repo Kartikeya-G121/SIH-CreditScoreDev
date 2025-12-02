@@ -24,7 +24,7 @@ export const translations = {
     sidebar_help: 'Help',
     sidebar_settings: 'Settings',
     sidebar_group_lending: 'Group Lending',
-    sidebar_xai: 'XAI Explainability',
+    sidebar_xai: 'Composite Score',
     sidebar_notifications: 'Notifications',
 
     // Beneficiary Dashboard
@@ -187,7 +187,7 @@ export const translations = {
     sidebar_help: 'मदद',
     sidebar_settings: 'सेटिंग्स',
     sidebar_group_lending: 'समूह ऋण',
-    sidebar_xai: 'XAI व्याख्या',
+    sidebar_xai: 'समग्र स्कोर',
     sidebar_notifications: 'सूचनाएं',
 
     // Beneficiary Dashboard

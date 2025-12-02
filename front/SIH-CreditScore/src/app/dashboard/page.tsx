@@ -18,7 +18,7 @@ import {
 import { Logo } from '@/components/layout/logo';
 import BeneficiaryDashboard from '@/components/dashboards/beneficiary-dashboard';
 import OfficerDashboard from '@/components/dashboards/officer-dashboard';
-import CreditAssessment from '@/components/credit-scoring/credit-assessment';
+
 
 import NotificationsCenter from '@/components/dashboards/notifications-center';
 import ScoreExplainability from '@/components/dashboards/score-explainability';
@@ -100,11 +100,7 @@ function DashboardSidebar() {
         icon: <UploadCloud />,
         label: t('sidebar_bill_upload'),
       },
-      {
-        id: 'credit-score',
-        icon: <BarChart3 />,
-        label: 'UDAAN Score',
-      },
+
       {
         id: 'xai',
         icon: <Brain />,
@@ -258,9 +254,7 @@ export default function DashboardPage() {
   const renderDashboard = () => {
     switch (user.role) {
       case 'beneficiary':
-        if (tab === 'credit-score') {
-          return <CreditAssessment beneficiaryId={user.id || 'BEN001'} />;
-        }
+
 
         if (tab === 'notifications') {
           return <NotificationsCenter />;

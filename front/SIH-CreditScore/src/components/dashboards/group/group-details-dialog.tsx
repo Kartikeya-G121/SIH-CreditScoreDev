@@ -28,6 +28,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { loanApplicationService } from '@/services/loan-application-service';
+import { GroupApplicationStatus } from '@/types/loan-application-types';
 import { groupService } from '@/services/group-service';
 import { GroupResponse, MemberResponse } from '@/types/group-types';
 import { Loader2, User, UserCheck, UserX, LogOut, Trash2, Edit, Save } from 'lucide-react';
@@ -50,6 +52,7 @@ export function GroupDetailsDialog({ group, open, onOpenChange, onRefresh }: Gro
     const { user } = useAuth();
     const { toast } = useToast();
     const [members, setMembers] = useState<MemberResponse[]>([]);
+    const [loanStatuses, setLoanStatuses] = useState<GroupApplicationStatus | null>(null);
     const [isLoadingMembers, setIsLoadingMembers] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -84,8 +87,12 @@ export function GroupDetailsDialog({ group, open, onOpenChange, onRefresh }: Gro
         if (!group) return;
         try {
             setIsLoadingMembers(true);
-            const response = await groupService.getGroupMembers(group.groupId);
-            setMembers(response.members);
+            const [membersResponse, statusResponse] = await Promise.all([
+                groupService.getGroupMembers(group.groupId),
+                loanApplicationService.getGroupApplicationStatus(group.groupId).catch(() => null)
+            ]);
+            setMembers(membersResponse.members);
+            setLoanStatuses(statusResponse);
         } catch (error) {
             console.error('Failed to fetch members:', error);
         } finally {
@@ -132,8 +139,12 @@ export function GroupDetailsDialog({ group, open, onOpenChange, onRefresh }: Gro
             toast({ title: 'Success', description: 'Group disbanded successfully.' });
             onOpenChange(false);
             onRefresh();
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to disband group.' });
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error.message || 'Failed to disband group.'
+            });
         } finally {
             setIsProcessing(false);
         }
@@ -285,36 +296,53 @@ export function GroupDetailsDialog({ group, open, onOpenChange, onRefresh }: Gro
                                     </div>
                                 ) : (
                                     <div className="space-y-3 py-2">
-                                        {members.map((member) => (
-                                            <div key={member.memberId} className="flex items-center justify-between p-2 rounded-lg border bg-card">
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="h-8 w-8">
-                                                        <AvatarFallback>{member.userName.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                                    </Avatar>
-                                                    <div>
-                                                        <p className="text-sm font-medium leading-none">{member.userName}</p>
-                                                        <p className="text-xs text-muted-foreground">{member.role}</p>
+                                        {members.map((member) => {
+                                            const loanStatus = loanStatuses?.members.find(m => m.userId === member.userId)?.status;
+                                            return (
+                                                <div key={member.memberId} className="flex items-center justify-between p-2 rounded-lg border bg-card">
+                                                    <div className="flex items-center gap-3">
+                                                        <Avatar className="h-8 w-8">
+                                                            <AvatarFallback>{member.userName.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                        </Avatar>
+                                                        <div>
+                                                            <p className="text-sm font-medium leading-none">{member.userName}</p>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <p className="text-xs text-muted-foreground">{member.role}</p>
+                                                                {loanStatus && (
+                                                                    <Badge
+                                                                        variant="secondary"
+                                                                        className={`text-[10px] h-5 px-1.5 ${loanStatus === 'SUBMITTED' ? 'bg-green-100 text-green-700 hover:bg-green-100' :
+                                                                            loanStatus === 'DRAFT' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100' :
+                                                                                'bg-slate-100 text-slate-600 hover:bg-slate-100'
+                                                                            }`}
+                                                                    >
+                                                                        {loanStatus === 'SUBMITTED' ? 'Loan Submitted' :
+                                                                            loanStatus === 'DRAFT' ? 'Loan Drafted' : 'No Loan'}
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {member.status === 'PENDING' && (
+                                                            <Badge variant="outline" className="text-yellow-600 border-yellow-600">Pending</Badge>
+                                                        )}
+                                                        {isLeader && user?.id && member.userId !== parseInt(user.id) && (
+                                                            <>
+                                                                {member.status === 'PENDING' && (
+                                                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={() => handleApprove(member.userId)}>
+                                                                        <UserCheck className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600" onClick={() => handleRemove(member.userId)}>
+                                                                    <UserX className="h-4 w-4" />
+                                                                </Button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    {member.status === 'PENDING' && (
-                                                        <Badge variant="outline" className="text-yellow-600 border-yellow-600">Pending</Badge>
-                                                    )}
-                                                    {isLeader && user?.id && member.userId !== parseInt(user.id) && (
-                                                        <>
-                                                            {member.status === 'PENDING' && (
-                                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={() => handleApprove(member.userId)}>
-                                                                    <UserCheck className="h-4 w-4" />
-                                                                </Button>
-                                                            )}
-                                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600" onClick={() => handleRemove(member.userId)}>
-                                                                <UserX className="h-4 w-4" />
-                                                            </Button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </ScrollArea>

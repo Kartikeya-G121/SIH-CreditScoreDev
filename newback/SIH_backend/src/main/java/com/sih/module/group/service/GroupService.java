@@ -20,6 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.sih.module.loan.entity.Loan;
+import com.sih.module.loan.entity.Repayment;
+import com.sih.module.loan.repository.RepaymentRepository;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -31,6 +35,7 @@ public class GroupService {
     private final BeneficiaryProfileRepository beneficiaryProfileRepository;
     private final LoanApplicationRepository applicationRepository;
     private final com.sih.module.loan.repository.LoanRepository loanRepository;
+    private final RepaymentRepository repaymentRepository;
 
     private static final int MAX_GROUP_MEMBERS = 10;
 
@@ -118,6 +123,21 @@ public class GroupService {
         if (hasActiveLoans) {
             throw new BadRequestException("Cannot disband group while there are active or overdue loans.");
         }
+
+        // Delete all loans associated with this group (since we checked they are not
+        // ACTIVE/OVERDUE)
+        List<Loan> groupLoans = loanRepository.findByGroupGroupId(groupId);
+        for (Loan loan : groupLoans) {
+            // Delete repayments first
+            List<Repayment> repayments = repaymentRepository.findByLoanLoanId(loan.getLoanId());
+            repaymentRepository.deleteAll(repayments);
+            // Delete loan
+            loanRepository.delete(loan);
+        }
+
+        // Delete all loan applications associated with this group
+        List<LoanApplication> applications = applicationRepository.findByGroupGroupId(groupId);
+        applicationRepository.deleteAll(applications);
 
         group.setIsActive(false);
         groupRepository.save(group);

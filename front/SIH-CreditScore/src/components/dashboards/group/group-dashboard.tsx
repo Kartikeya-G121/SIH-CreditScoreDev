@@ -25,7 +25,7 @@ export function GroupDashboard() {
     const fetchMyGroups = async () => {
         try {
             const data = await groupService.getMyGroups();
-            setMyGroups(data.groups || []);
+            setMyGroups((data.groups || []).filter(g => g.isActive));
         } catch (error) {
             console.error('Failed to fetch my groups:', error);
         }

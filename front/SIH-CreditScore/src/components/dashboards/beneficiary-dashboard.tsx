@@ -428,7 +428,7 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
 
                     <div className="text-center bg-white/10 backdrop-blur-sm rounded-2xl px-8 py-4 border border-white/20">
                       <div className="text-5xl font-bold mb-1">{creditScore}</div>
-                      <div className="text-sm text-white/90 font-medium tracking-wide">UDAAN Score</div>
+                      <div className="text-sm text-white/90 font-medium tracking-wide">Composite Score</div>
                     </div>
                   </div>
                 </div>

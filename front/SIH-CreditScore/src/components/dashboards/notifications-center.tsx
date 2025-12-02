@@ -10,7 +10,7 @@ export default function NotificationsCenter() {
       id: 1,
       type: 'success',
       title: 'Credit Score Updated',
-      message: 'Your UDAAN score has been recalculated and improved by 15 points',
+      message: 'Your Composite Score has been recalculated and improved by 15 points',
       time: '2 hours ago',
       icon: <CheckCircle className="h-4 w-4" />
     },
@@ -46,8 +46,8 @@ export default function NotificationsCenter() {
             {notifications.map((notification) => (
               <div key={notification.id} className="flex items-start gap-3 p-3 border rounded-lg">
                 <div className={`p-1 rounded-full ${notification.type === 'success' ? 'bg-green-100 text-green-600' :
-                    notification.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
-                      'bg-blue-100 text-blue-600'
+                  notification.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                    'bg-blue-100 text-blue-600'
                   }`}>
                   {notification.icon}
                 </div>

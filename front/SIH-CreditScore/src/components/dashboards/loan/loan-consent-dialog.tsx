@@ -173,7 +173,7 @@ export function LoanConsentDialog({
                             </h3>
                             <div className="space-y-2 text-muted-foreground pl-6">
                                 <p>
-                                    • Defaulting on loan payments will negatively impact your UDAAN credit score and
+                                    • Defaulting on loan payments will negatively impact your Composite Score and
                                     future loan eligibility.
                                 </p>
                                 <p>

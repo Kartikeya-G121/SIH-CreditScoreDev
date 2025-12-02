@@ -92,16 +92,15 @@ export const loanApplicationService = {
                 // For the dashboard list, status is most important.
             }));
 
-            // 4. Check if can submit (Leader only, all members must be DRAFT)
+            // 4. Check if can submit (Leader only, all members must be DRAFT or SUBMITTED)
             // Note: The backend might enforce this, but we can also check here for UI state.
-            // "The Leader can ONLY submit when EVERYONE is in DRAFT status."
-            const allMembersDraft = members.every(m => m.status === 'DRAFT');
+            const allMembersReady = members.every(m => m.status === 'DRAFT' || m.status === 'SUBMITTED');
 
             return {
                 groupId,
                 groupName: group.groupName,
                 leaderName: group.leaderName,
-                canSubmit: allMembersDraft,
+                canSubmit: allMembersReady,
                 members
             };
         } catch (error) {

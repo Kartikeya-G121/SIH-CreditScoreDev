@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Users, CheckCircle2, AlertCircle, FileText, Send } from 'lucide-react';
+import { Loader2, Users, CheckCircle2, AlertCircle, FileText, Send, RefreshCw } from 'lucide-react';
 import { userService } from '@/services/user-service';
 import { useToast } from '@/hooks/use-toast';
 import { loanApplicationService } from '@/services/loan-application-service';
@@ -84,6 +84,10 @@ export function GroupLoanDashboard({ groupId, onDraftApplication, onBack }: Grou
 
     const getStatusBadge = (status: GroupMemberApplicationStatus['status']) => {
         switch (status) {
+            case 'APPROVED':
+                return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Approved</Badge>;
+            case 'SCORING':
+                return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Scoring</Badge>;
             case 'SUBMITTED':
                 return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Submitted</Badge>;
             case 'DRAFT':
@@ -107,6 +111,12 @@ export function GroupLoanDashboard({ groupId, onDraftApplication, onBack }: Grou
     const currentUserMember = status.members.find((m: GroupMemberApplicationStatus) => m.userId === currentUserId);
     const isLeader = currentUserMember?.role === 'LEADER';
 
+    const totalMembers = status.members.length;
+    const readyMembers = status.members.filter(m =>
+        ['DRAFT', 'SUBMITTED', 'SCORING', 'APPROVED'].includes(m.status)
+    ).length;
+    const progressPercentage = (readyMembers / totalMembers) * 100;
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -118,10 +128,45 @@ export function GroupLoanDashboard({ groupId, onDraftApplication, onBack }: Grou
                         Group Leader: {status.leaderName}
                     </p>
                 </div>
-                <Button variant="outline" onClick={onBack}>
-                    Back to Selection
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={fetchStatus} disabled={isLoading}>
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                        Refresh Status
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={onBack}>
+                        Back to Selection
+                    </Button>
+                </div>
             </div>
+
+            {/* Leader Summary Card */}
+            {isLeader && (
+                <Card className="bg-blue-50/50 border-blue-100">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center justify-between">
+                            <span>Group Progress</span>
+                            <span className="text-sm font-normal text-muted-foreground">
+                                {readyMembers} of {totalMembers} members ready
+                            </span>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
+                            <div className="h-2 w-full bg-blue-100 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-blue-600 transition-all duration-500 ease-out"
+                                    style={{ width: `${progressPercentage}%` }}
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {status.canSubmit
+                                    ? "All members have completed their applications. You can now submit the group application."
+                                    : "Waiting for all members to complete their draft applications."}
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Member Status Table */}
             <Card>
@@ -150,7 +195,7 @@ export function GroupLoanDashboard({ groupId, onDraftApplication, onBack }: Grou
                                     </TableCell>
                                     <TableCell>
                                         {/* @ts-ignore */}
-                                        <Badge className="border-input bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground border">{member.role}</Badge>
+                                        <Badge variant="outline" className="font-normal">{member.role}</Badge>
                                     </TableCell>
                                     <TableCell>{getStatusBadge(member.status)}</TableCell>
                                     <TableCell className="text-right">

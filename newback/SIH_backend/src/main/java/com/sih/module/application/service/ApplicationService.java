@@ -36,6 +36,22 @@ public class ApplicationService {
     private final BeneficiaryProfileRepository beneficiaryProfileRepository;
     private final LoanSchemeRepository schemeRepository;
     private final FailSafeConfig failSafeConfig;
+    private final com.sih.module.loan.repository.LoanRepository loanRepository;
+    private final com.sih.module.loan.repository.RepaymentRepository repaymentRepository;
+
+    @Transactional
+    public void deleteAllApplications() {
+        // 1. Delete all repayments
+        repaymentRepository.deleteAll();
+
+        // 2. Delete all loans
+        loanRepository.deleteAll();
+
+        // 3. Delete all applications
+        applicationRepository.deleteAll();
+
+        log.info("All applications, loans, and repayments deleted.");
+    }
 
     @Transactional
     public ApplicationResponse createApplication(Long userId, ApplicationRequest request) {
@@ -390,46 +406,41 @@ public class ApplicationService {
         List<GroupMember> members = groupMemberRepository.findByGroupGroupIdAndStatus(groupId, "APPROVED");
         List<LoanApplication> applications = applicationRepository.findByGroupGroupId(groupId);
 
-        // Filter for active DRAFT applications
-        List<LoanApplication> draftApplications = applications.stream()
-                .filter(app -> "DRAFT".equals(app.getStatus()))
+        // Filter for active DRAFT or SUBMITTED applications
+        List<LoanApplication> validApplications = applications.stream()
+                .filter(app -> "DRAFT".equals(app.getStatus()) || "SUBMITTED".equals(app.getStatus()))
                 .collect(Collectors.toList());
 
-        // Check if all members have a draft application
-        // Note: This logic assumes 1 active draft per member.
-        // Since we restrict creation, checking size might be enough if we assume no
-        // other active apps.
-        // Better to verify each member has exactly one DRAFT application.
-
-        List<Long> membersWithDrafts = draftApplications.stream()
+        // Check if all members have a valid application
+        List<Long> membersWithApps = validApplications.stream()
                 .map(app -> app.getUser().getUserId())
                 .collect(Collectors.toList());
 
         for (GroupMember member : members) {
-            if (!membersWithDrafts.contains(member.getUser().getUserId())) {
+            if (!membersWithApps.contains(member.getUser().getUserId())) {
                 String memberName = beneficiaryProfileRepository.findByUserUserId(member.getUser().getUserId())
                         .map(p -> p.getFullName())
                         .orElse("Unknown Name");
                 throw new BadRequestException(
                         "Cannot submit: Member " + memberName + " (" + member.getUser().getPhoneNumber()
-                                + ") has not drafted an application yet.");
+                                + ") has not completed an application yet.");
             }
         }
 
-        // Submit all
-        draftApplications.forEach(app -> {
+        // Submit all DRAFT applications
+        List<LoanApplication> drafts = validApplications.stream()
+                .filter(app -> "DRAFT".equals(app.getStatus()))
+                .collect(Collectors.toList());
+
+        drafts.forEach(app -> {
             app.setStatus("SUBMITTED");
             app.setStageTimestamp(java.time.OffsetDateTime.now());
         });
 
-        List<LoanApplication> savedApps = applicationRepository.saveAll(draftApplications);
+        List<LoanApplication> savedApps = applicationRepository.saveAll(drafts);
         log.info("Group {} applications submitted by leader {}", groupId, leaderId);
 
-        // Fail-safe: Trigger scoring for batch?
-        // For now, just move to SCORING or SUBMITTED as per individual flow
-        // We can iterate and trigger individual scoring or batch scoring
-
-        return savedApps.stream().map(this::mapToResponse).collect(Collectors.toList());
+        return validApplications.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     private ApplicationResponse mapToResponse(LoanApplication application) {

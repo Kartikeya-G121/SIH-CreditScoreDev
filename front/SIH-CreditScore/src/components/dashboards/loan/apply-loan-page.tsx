@@ -110,7 +110,58 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId, applicationId }: A
 
     // --- Workflow Handlers ---
 
+    const [existingApplications, setExistingApplications] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchApplications = async () => {
+            try {
+                const apps = await loanApplicationService.getMyApplications();
+                setExistingApplications(apps);
+            } catch (error) {
+                console.error('Failed to fetch existing applications:', error);
+            }
+        };
+        fetchApplications();
+    }, []);
+
     const handleLoanTypeSelect = (type: LoanType) => {
+        // Check for existing active applications of the same type
+        const activeApp = existingApplications.find(app => {
+            const appType = app.groupId ? 'GROUP' : 'INDIVIDUAL';
+            // Active means not finalized/closed
+            const isActive = !['SANCTIONED', 'REJECTED', 'WITHDRAWN'].includes(app.status);
+            return appType === type && isActive;
+        });
+
+        if (activeApp) {
+            if (activeApp.status === 'DRAFT') {
+                toast({
+                    title: "Draft Application Found",
+                    description: `You have an ${type.toLowerCase()} loan application in draft. Please continue editing your draft instead of creating a new one.`,
+                    action: (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDraftApplication(activeApp.applicationId)}
+                        >
+                            Edit Draft
+                        </Button>
+                    ),
+                    duration: 5000,
+                });
+                return;
+            } else {
+                // Application is in progress (SUBMITTED, SCORING, APPROVED, etc.)
+                toast({
+                    variant: "destructive",
+                    title: "Application Already Submitted",
+                    description: `You have already submitted an ${type.toLowerCase()} loan application. You cannot edit or create a new application of the same type until this one is sanctioned, rejected, or withdrawn.`,
+                    duration: 5000,
+                });
+                return;
+            }
+        }
+
         setLoanType(type);
         if (type === 'GROUP') {
             setCurrentView('GROUP_SELECT');
@@ -415,6 +466,7 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId, applicationId }: A
             <div className="animate-in fade-in-50 duration-300">
                 {workflowState.currentStep === 1 && (
                     <ApplicationFormStep
+                        key={workflowState.applicationId || 'new'}
                         preSelectedSchemeId={preSelectedSchemeId}
                         groupId={selectedGroupId}
                         onNext={handleStep1Next}

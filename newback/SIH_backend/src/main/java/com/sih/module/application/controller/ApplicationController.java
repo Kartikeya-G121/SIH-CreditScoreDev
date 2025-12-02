@@ -111,4 +111,10 @@ public class ApplicationController {
         TimelineResponse response = applicationService.getApplicationTimeline(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @DeleteMapping("/all")
+    public ResponseEntity<ApiResponse<Object>> deleteAllApplications() {
+        applicationService.deleteAllApplications();
+        return ResponseEntity.ok(ApiResponse.success("All applications deleted successfully"));
+    }
 }

@@ -93,7 +93,6 @@ services:
       - ../../front/SIH-CreditScore/public:/app/public
       - ../../front/SIH-CreditScore/next.config.ts:/app/next.config.ts
       - ../../front/SIH-CreditScore/package.json:/app/package.json
-      - /app/node_modules
 
   ocr-service:
     build: ./ocr-service
