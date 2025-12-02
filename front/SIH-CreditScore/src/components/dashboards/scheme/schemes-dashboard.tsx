@@ -175,6 +175,7 @@ export function SchemesDashboard() {
                 scheme={selectedScheme}
                 open={isDetailsOpen}
                 onOpenChange={setIsDetailsOpen}
+                isAdmin={isAdmin}
             />
 
             <RegionalParametersDialog

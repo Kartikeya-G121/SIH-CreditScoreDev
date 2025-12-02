@@ -65,7 +65,6 @@ import { useLanguage } from '@/contexts/language-context';
 import { useToast } from '@/hooks/use-toast';
 import { EditProfileDialog } from './edit-profile-dialog';
 import { DocumentManagerDialog } from './document-manager-dialog';
-import { LoanTypeSelectionDialog } from './loan/loan-type-selection-dialog';
 import { GroupSelectionDialog } from './loan/group-selection-dialog';
 import { LoanConsentDialog } from './loan/loan-consent-dialog';
 import { loanApplicationService } from '@/services/loan-application-service';
@@ -156,7 +155,6 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
   const [showDocumentManager, setShowDocumentManager] = useState(false);
 
   // Loan application flow state
-  const [showLoanTypeDialog, setShowLoanTypeDialog] = useState(false);
   const [showGroupSelectionDialog, setShowGroupSelectionDialog] = useState(false);
   const [showConsentDialog, setShowConsentDialog] = useState(false);
   const [selectedLoanType, setSelectedLoanType] = useState<LoanType>('individual');
@@ -299,10 +297,7 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
     }, 1600);
   };
 
-  // Loan application flow handlers
-  const handleApplyForLoan = () => {
-    setShowLoanTypeDialog(true);
-  };
+
 
   const handleLoanTypeSelection = async (type: LoanType) => {
     setSelectedLoanType(type);
@@ -429,16 +424,7 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
                       )}
                     </Button>
 
-                    <Button
-                      variant="default"
-                      size="lg"
-                      className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 px-8 py-6 text-base"
-                      onClick={handleApplyForLoan}
-                      aria-label="Apply for Loan"
-                    >
-                      <Landmark className="mr-2 h-5 w-5" />
-                      Apply for Loan
-                    </Button>
+
 
                     <div className="text-center bg-white/10 backdrop-blur-sm rounded-2xl px-8 py-4 border border-white/20">
                       <div className="text-5xl font-bold mb-1">{creditScore}</div>
@@ -792,7 +778,10 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
 
         {/* -------------------- Applications -------------------- */}
         <TabsContent value="applications" className="space-y-8 mt-0 p-1">
-          <MyApplicationsList onApplyNew={handleApplyForLoan} />
+          <MyApplicationsList
+            onApplyNew={() => router.push('/dashboard?tab=apply-loan')}
+            isAdmin={user?.role === 'officer'}
+          />
         </TabsContent>
 
         {/* -------------------- Advice -------------------- */}
@@ -830,11 +819,7 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
       />
 
       {/* Loan Application Flow Dialogs */}
-      <LoanTypeSelectionDialog
-        open={showLoanTypeDialog}
-        onOpenChange={setShowLoanTypeDialog}
-        onSelectType={handleLoanTypeSelection}
-      />
+
 
       <GroupSelectionDialog
         open={showGroupSelectionDialog}

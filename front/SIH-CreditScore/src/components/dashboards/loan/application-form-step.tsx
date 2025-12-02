@@ -44,6 +44,7 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedScheme, setSelectedScheme] = useState<SchemeResponse | null>(null);
     const [tenureMonths, setTenureMonths] = useState<number>(12);
+    const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -105,6 +106,14 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
 
         fetchSchemes();
     }, [preSelectedSchemeId, toast, form]);
+
+    // Define categories based on admin options
+    const categories = ['All', 'Agriculture', 'Business', 'Education', 'Personal', 'Housing'];
+
+    // Filter schemes based on selected category
+    const filteredSchemes = schemes.filter(s =>
+        selectedCategory === 'All' || (s.loanCategory || 'Other') === selectedCategory
+    );
 
     // Update selected scheme when scheme ID changes
     const handleSchemeChange = (schemeId: string) => {
@@ -202,6 +211,29 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Loan Scheme *</FormLabel>
+
+                                    {/* Category Filter */}
+                                    <div className="mb-4">
+                                        <label className="text-sm font-medium mb-1.5 block">Filter by Category</label>
+                                        <Select
+                                            value={selectedCategory}
+                                            onValueChange={setSelectedCategory}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select Category" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {categories.map((category) => (
+                                                    <SelectItem key={category} value={category}>
+                                                        {category}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
                                     <Select
                                         onValueChange={handleSchemeChange}
                                         defaultValue={field.value?.toString()}
@@ -213,11 +245,17 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {schemes.map((scheme) => (
-                                                <SelectItem key={scheme.schemeId} value={scheme.schemeId.toString()}>
-                                                    {scheme.schemeName} - {scheme.providerName}
-                                                </SelectItem>
-                                            ))}
+                                            {filteredSchemes.length === 0 ? (
+                                                <div className="p-2 text-sm text-muted-foreground text-center">
+                                                    No schemes found for this category
+                                                </div>
+                                            ) : (
+                                                filteredSchemes.map((scheme) => (
+                                                    <SelectItem key={scheme.schemeId} value={scheme.schemeId.toString()}>
+                                                        {scheme.schemeName} - {scheme.providerName}
+                                                    </SelectItem>
+                                                ))
+                                            )}
                                         </SelectContent>
                                     </Select>
                                     <FormDescription>
@@ -233,6 +271,10 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
                             <div className="rounded-lg border bg-muted/50 p-4 space-y-4">
                                 <h4 className="font-semibold text-sm">Scheme Details</h4>
                                 <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p className="text-muted-foreground">Category</p>
+                                        <p className="font-medium">{selectedScheme.loanCategory || 'N/A'}</p>
+                                    </div>
                                     <div>
                                         <p className="text-muted-foreground">Interest Rate</p>
                                         <p className="font-medium">{selectedScheme.baseInterestRate}% p.a.</p>

@@ -8,13 +8,15 @@ import java.math.BigDecimal;
 
 @Data
 public class PaymentRequest {
-    
+
     @NotNull(message = "Amount is required")
     private BigDecimal amount;
-    
+
     @NotBlank(message = "Payment mode is required")
     private String mode;
-    
-    private String transactionRef;
-}
 
+    private String transactionRef;
+
+    // "TENURE_REDUCTION" (default) or "EMI_REDUCTION"
+    private String adjustmentMode = "TENURE_REDUCTION";
+}

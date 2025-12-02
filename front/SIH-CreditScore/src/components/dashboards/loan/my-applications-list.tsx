@@ -25,9 +25,10 @@ import {
 
 interface MyApplicationsListProps {
     onApplyNew: () => void;
+    isAdmin?: boolean;
 }
 
-export function MyApplicationsList({ onApplyNew }: MyApplicationsListProps) {
+export function MyApplicationsList({ onApplyNew, isAdmin }: MyApplicationsListProps) {
     const router = useRouter();
     const { toast } = useToast();
     const [applications, setApplications] = useState<ApplicationResponse[]>([]);
@@ -142,10 +143,12 @@ export function MyApplicationsList({ onApplyNew }: MyApplicationsListProps) {
                         Track the status of your loan applications
                     </CardDescription>
                 </div>
-                <Button onClick={onApplyNew}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Apply New Loan
-                </Button>
+                {!isAdmin && (
+                    <Button onClick={onApplyNew}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Apply New Loan
+                    </Button>
+                )}
             </CardHeader>
             <CardContent>
                 {applications.length === 0 ? (
@@ -155,7 +158,7 @@ export function MyApplicationsList({ onApplyNew }: MyApplicationsListProps) {
                         <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
                             You haven't submitted any loan applications yet. Start a new application to get financial support.
                         </p>
-                        <Button onClick={onApplyNew}>Apply for Loan</Button>
+                        {!isAdmin && <Button onClick={onApplyNew}>Apply for Loan</Button>}
                     </div>
                 ) : (
                     <div className="rounded-md border">

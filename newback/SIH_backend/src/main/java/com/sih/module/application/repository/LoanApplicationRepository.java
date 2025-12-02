@@ -9,7 +9,10 @@ import java.util.List;
 @Repository
 public interface LoanApplicationRepository extends JpaRepository<LoanApplication, Long> {
     List<LoanApplication> findByUserUserId(Long userId);
-    List<LoanApplication> findByStatus(String status);
-    List<LoanApplication> findByGroupGroupId(Long groupId);
-}
 
+    List<LoanApplication> findByStatus(String status);
+
+    List<LoanApplication> findByGroupGroupId(Long groupId);
+
+    List<LoanApplication> findByGroupGroupIdAndUserUserId(Long groupId, Long userId);
+}

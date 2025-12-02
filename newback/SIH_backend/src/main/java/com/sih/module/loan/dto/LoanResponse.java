@@ -28,5 +28,10 @@ public class LoanResponse {
     private LocalDate nextPaymentDate;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-}
 
+    // Group Loan Details
+    private Boolean isGroupLoan;
+    private Long groupId;
+    private String groupName;
+    private String groupStatus;
+}

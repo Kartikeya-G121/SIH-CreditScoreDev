@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Loader2, ArrowLeft, CheckCircle2, FileText, User, MapPin, IndianRupee, Calendar } from 'lucide-react';
 import { loanApplicationService } from '@/services/loan-application-service';
 import { beneficiaryService } from '@/services/beneficiary-service';
+import { schemeService } from '@/services/scheme-service';
 import type { ApplicationResponse } from '@/types/loan-application-types';
+import type { SchemeResponse } from '@/types/scheme-types';
 import type { BeneficiaryProfile } from '@/types/beneficiary';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,6 +24,7 @@ interface ReviewApplicationStepProps {
 export function ReviewApplicationStep({ applicationId, onBack, onSubmit, isReadOnly = false }: ReviewApplicationStepProps) {
     const { toast } = useToast();
     const [application, setApplication] = useState<ApplicationResponse | null>(null);
+    const [scheme, setScheme] = useState<SchemeResponse | null>(null);
     const [profile, setProfile] = useState<BeneficiaryProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,6 +40,11 @@ export function ReviewApplicationStep({ applicationId, onBack, onSubmit, isReadO
                 ]);
                 setApplication(appData);
                 setProfile(profileData);
+
+                if (appData.schemeId) {
+                    const schemeData = await schemeService.getSchemeById(appData.schemeId);
+                    setScheme(schemeData);
+                }
             } catch (error) {
                 console.error('Failed to fetch data:', error);
                 toast({
@@ -122,6 +130,18 @@ export function ReviewApplicationStep({ applicationId, onBack, onSubmit, isReadO
                             <p className="text-sm text-muted-foreground">Requested Amount</p>
                             <p className="text-lg font-bold text-primary">₹{application.requestedAmount.toLocaleString()}</p>
                         </div>
+                        {scheme && (
+                            <>
+                                <div className="rounded-lg border bg-muted/30 p-4">
+                                    <p className="text-sm text-muted-foreground">Scheme Name</p>
+                                    <p className="font-medium">{scheme.schemeName}</p>
+                                </div>
+                                <div className="rounded-lg border bg-muted/30 p-4">
+                                    <p className="text-sm text-muted-foreground">Category</p>
+                                    <p className="font-medium">{scheme.loanCategory}</p>
+                                </div>
+                            </>
+                        )}
                         <div className="rounded-lg border bg-muted/30 p-4">
                             <p className="text-sm text-muted-foreground">Tenure</p>
                             <p className="font-medium">{application.tenureMonths} Months</p>

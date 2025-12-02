@@ -17,28 +17,35 @@ import java.util.List;
 @RequestMapping("/api/v1/loans")
 @RequiredArgsConstructor
 public class LoanController {
-    
+
     private final LoanService loanService;
-    
+
     @GetMapping
     public ResponseEntity<ApiResponse<List<LoanResponse>>> getMyLoans(
             @AuthenticationPrincipal Long userId) {
         List<LoanResponse> loans = loanService.getMyLoans(userId);
         return ResponseEntity.ok(ApiResponse.success(loans));
     }
-    
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<LoanResponse>> getLoanById(@PathVariable Long id) {
         LoanResponse response = loanService.getLoanById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
-    
+
     @GetMapping("/{id}/schedule")
     public ResponseEntity<ApiResponse<List<Repayment>>> getSchedule(@PathVariable Long id) {
         List<Repayment> schedule = loanService.getRepaymentSchedule(id);
         return ResponseEntity.ok(ApiResponse.success(schedule));
     }
-    
+
+    @GetMapping("/{id}/projected-schedule")
+    public ResponseEntity<ApiResponse<List<com.sih.module.loan.dto.RepaymentScheduleDTO>>> getProjectedSchedule(
+            @PathVariable Long id) {
+        List<com.sih.module.loan.dto.RepaymentScheduleDTO> schedule = loanService.getProjectedSchedule(id);
+        return ResponseEntity.ok(ApiResponse.success(schedule));
+    }
+
     @PostMapping("/{id}/repay")
     public ResponseEntity<ApiResponse<Object>> makeRepayment(
             @PathVariable Long id,
@@ -47,7 +54,7 @@ public class LoanController {
         loanService.makeRepayment(id, userId, request);
         return ResponseEntity.ok(ApiResponse.success("Repayment recorded successfully"));
     }
-    
+
     @PostMapping("/{id}/foreclose")
     public ResponseEntity<ApiResponse<Object>> forecloseLoan(
             @PathVariable Long id,
@@ -55,11 +62,16 @@ public class LoanController {
         loanService.forecloseLoan(id, userId);
         return ResponseEntity.ok(ApiResponse.success("Loan foreclosed"));
     }
-    
+
     @PostMapping("/{id}/waive-off")
     public ResponseEntity<ApiResponse<Object>> waiveOffLoan(@PathVariable Long id) {
         loanService.waiveOffLoan(id);
         return ResponseEntity.ok(ApiResponse.success("Loan waived off"));
     }
-}
 
+    @PostMapping("/check-defaults")
+    public ResponseEntity<ApiResponse<Object>> triggerDefaultCheck() {
+        loanService.checkDefaults();
+        return ResponseEntity.ok(ApiResponse.success("Default check triggered successfully"));
+    }
+}

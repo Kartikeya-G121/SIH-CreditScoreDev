@@ -146,6 +146,14 @@ public class ApplicationService {
         if (request.getGroupId() != null) {
             BorrowerGroup group = groupRepository.findById(request.getGroupId())
                     .orElseThrow(() -> new ResourceNotFoundException("Group not found"));
+
+            // Verify user is a member of the new group
+            boolean isMember = groupMemberRepository.existsByGroupGroupIdAndUserUserIdAndStatus(
+                    request.getGroupId(), userId, "APPROVED");
+            if (!isMember) {
+                throw new BadRequestException("You must be an approved member of the group to apply");
+            }
+
             application.setGroup(group);
         }
         if (request.getSchemeId() != null) {

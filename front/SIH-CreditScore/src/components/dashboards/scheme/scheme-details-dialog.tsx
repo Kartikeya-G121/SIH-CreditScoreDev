@@ -19,9 +19,10 @@ interface SchemeDetailsDialogProps {
     scheme: SchemeResponse | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    isAdmin?: boolean;
 }
 
-export function SchemeDetailsDialog({ scheme, open, onOpenChange }: SchemeDetailsDialogProps) {
+export function SchemeDetailsDialog({ scheme, open, onOpenChange, isAdmin }: SchemeDetailsDialogProps) {
     const { toast } = useToast();
 
     if (!scheme) return null;
@@ -108,7 +109,7 @@ export function SchemeDetailsDialog({ scheme, open, onOpenChange }: SchemeDetail
 
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-                    <Button onClick={handleApply} disabled={!scheme.isActive}>Apply Now</Button>
+                    {!isAdmin && <Button onClick={handleApply} disabled={!scheme.isActive}>Apply Now</Button>}
                 </DialogFooter>
             </DialogContent>
         </Dialog>

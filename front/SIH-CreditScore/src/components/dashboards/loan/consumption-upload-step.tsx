@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Upload, X, FileText, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, Upload, X, FileText, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
 import { consumptionService } from '@/services/consumption-service';
 import { loanApplicationService } from '@/services/loan-application-service';
 import { BillCategory, ConsumptionEntry } from '@/types/loan-application-types';
@@ -26,7 +26,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 interface ConsumptionUploadStepProps {
     applicationId: number;
-    onBack: () => void;
     onBack: () => void;
     onNext: () => void;
     isGroupLoan?: boolean;
