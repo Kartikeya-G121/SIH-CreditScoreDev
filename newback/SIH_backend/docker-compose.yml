@@ -1,0 +1,153 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: income-processing-backend
+    ports:
+      - "8080:8080"
+      - "5005:5005" # Debug port
+    environment:
+      # Database
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/income_processing_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+
+      # Redis
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+      # OCR Service
+      - OCR_SERVICE_URL=http://ocr-service:5000
+
+      # Supabase
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_PUBLIC_URL=${SUPABASE_PUBLIC_URL}
+      - SUPABASE_BUCKET=${SUPABASE_BUCKET}
+      - SUPABASE_S3_ENDPOINT=${SUPABASE_S3_ENDPOINT}
+      - SUPABASE_S3_REGION=${SUPABASE_S3_REGION}
+      - SUPABASE_S3_ACCESS_KEY=${SUPABASE_S3_ACCESS_KEY}
+      - SUPABASE_S3_SECRET_KEY=${SUPABASE_S3_SECRET_KEY}
+
+      # JWT & Security
+      - JWT_SECRET=${JWT_SECRET}
+      - APP_BASE_URL=${APP_BASE_URL}
+
+      # Mail
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+
+      # SMS
+      - FAST2SMS_API_KEY=${FAST2SMS_API_KEY}
+
+      # AWS S3 (Optional)
+      - S3_ENABLED=${S3_ENABLED}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_REGION=${S3_REGION}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      ocr-service:
+        condition: service_started
+    networks:
+      - app-network
+    volumes:
+      - ./src:/app/src
+      - ./pom.xml:/app/pom.xml
+      - ./target:/app/target
+      - ./uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ../../front/SIH-CreditScore
+      dockerfile: Dockerfile.dev
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+    container_name: income-processing-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+      - WATCHPACK_POLLING=true
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    volumes:
+      - ../../front/SIH-CreditScore/src:/app/src
+      - ../../front/SIH-CreditScore/public:/app/public
+      - ../../front/SIH-CreditScore/next.config.ts:/app/next.config.ts
+      - ../../front/SIH-CreditScore/package.json:/app/package.json
+      - /app/node_modules
+
+  ocr-service:
+    build: ./ocr-service
+    container_name: income-processing-ocr
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      # Supabase (if needed by OCR service)
+      - SUPABASE_PUBLIC_URL=${SUPABASE_PUBLIC_URL}
+      - SUPABASE_S3_ACCESS_KEY=${SUPABASE_S3_ACCESS_KEY}
+      - SUPABASE_S3_SECRET_KEY=${SUPABASE_S3_SECRET_KEY}
+      - SUPABASE_S3_REGION=${SUPABASE_S3_REGION}
+      - SUPABASE_BUCKET=${SUPABASE_BUCKET}
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:15-bullseye
+    container_name: income-processing-postgres
+    environment:
+      POSTGRES_DB: income_processing_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      TZ: Asia/Kolkata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  redis:
+    image: redis:latest
+    container_name: income-processing-redis
+    ports:
+      - "6379:6379"
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+
+networks:
+  app-network:
+    driver: bridge
