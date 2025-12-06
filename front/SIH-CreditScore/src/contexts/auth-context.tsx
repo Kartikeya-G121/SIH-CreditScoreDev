@@ -80,8 +80,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
+
+      // Check if error is due to inactive account
+      const errorMessage = error?.message || '';
+      if (errorMessage.toLowerCase().includes('account is inactive') ||
+        errorMessage.toLowerCase().includes('verify otp')) {
+        // Store the email/phone for OTP verification
+        const isEmail = email.includes('@');
+        if (isEmail) {
+          localStorage.setItem('pending-registration-email', email);
+        } else {
+          localStorage.setItem('pending-registration-phone', email);
+        }
+
+        // Redirect to OTP verification page
+        const redirectUrl = isEmail
+          ? `/verify-otp?email=${encodeURIComponent(email)}`
+          : `/verify-otp?phone=${encodeURIComponent(email)}`;
+
+        router.push(redirectUrl);
+
+        // Return a special value to indicate redirect happened
+        throw new Error('REDIRECT_TO_OTP');
+      }
+
       return false;
     }
   };

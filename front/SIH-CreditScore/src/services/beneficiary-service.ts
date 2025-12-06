@@ -16,8 +16,7 @@ export const beneficiaryService = {
      * GET /api/v1/beneficiaries/me
      */
     async getMyProfile(): Promise<BeneficiaryProfile> {
-        const response = await fetchFromApi('/beneficiaries/me');
-        return response.data;
+        return await fetchFromApi('/beneficiaries/me');
     },
 
     /**
@@ -25,11 +24,10 @@ export const beneficiaryService = {
      * POST /api/v1/beneficiaries
      */
     async createProfile(data: CreateProfileRequest): Promise<BeneficiaryProfile> {
-        const response = await fetchFromApi('/beneficiaries', {
+        return await fetchFromApi('/beneficiaries', {
             method: 'POST',
             body: JSON.stringify(data),
         });
-        return response.data;
     },
 
     /**
@@ -58,13 +56,12 @@ export const beneficiaryService = {
             formData.append('identityProof', identityProof);
         }
 
-        const response = await fetchFromApi('/beneficiaries/complete-profile', {
+        return await fetchFromApi('/beneficiaries/complete-profile', {
             method: 'POST',
             body: formData,
             // Don't set Content-Type header - browser will set it with boundary
             headers: {},
         });
-        return response.data;
     },
 
     /**
@@ -72,11 +69,10 @@ export const beneficiaryService = {
      * PUT /api/v1/beneficiaries/me
      */
     async updateProfile(data: UpdateProfileRequest): Promise<BeneficiaryProfile> {
-        const response = await fetchFromApi('/beneficiaries/me', {
+        return await fetchFromApi('/beneficiaries/me', {
             method: 'PUT',
             body: JSON.stringify(data),
         });
-        return response.data;
     },
 
     /**
@@ -105,12 +101,11 @@ export const beneficiaryService = {
             formData.append('identityProof', identityProof);
         }
 
-        const response = await fetchFromApi('/beneficiaries/me/with-files', {
+        return await fetchFromApi('/beneficiaries/me/with-files', {
             method: 'PUT',
             body: formData,
             headers: {},
         });
-        return response.data;
     },
 
     /**
@@ -121,12 +116,11 @@ export const beneficiaryService = {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetchFromApi('/beneficiaries/upload-certificate', {
+        return await fetchFromApi('/beneficiaries/upload-certificate', {
             method: 'POST',
             body: formData,
             headers: {},
         });
-        return response.data;
     },
 
     /**
@@ -137,12 +131,11 @@ export const beneficiaryService = {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetchFromApi('/beneficiaries/upload-identity', {
+        return await fetchFromApi('/beneficiaries/upload-identity', {
             method: 'POST',
             body: formData,
             headers: {},
         });
-        return response.data;
     },
 
     /**
@@ -192,8 +185,7 @@ export const beneficiaryService = {
      * GET /api/v1/beneficiaries/{id}
      */
     async getProfileById(id: number): Promise<BeneficiaryProfile> {
-        const response = await fetchFromApi(`/beneficiaries/${id}`);
-        return response.data;
+        return await fetchFromApi(`/beneficiaries/${id}`);
     },
 
     /**
@@ -214,8 +206,7 @@ export const beneficiaryService = {
         const queryString = queryParams.toString();
         const endpoint = queryString ? `/beneficiaries?${queryString}` : '/beneficiaries';
 
-        const response = await fetchFromApi(endpoint);
-        return response.data;
+        return await fetchFromApi(endpoint);
     },
 
     /**
@@ -226,10 +217,9 @@ export const beneficiaryService = {
         id: number,
         data: VerifyProfileRequest
     ): Promise<BeneficiaryProfile> {
-        const response = await fetchFromApi(`/beneficiaries/${id}/verify`, {
+        return await fetchFromApi(`/beneficiaries/${id}/verify`, {
             method: 'PUT',
             body: JSON.stringify(data),
         });
-        return response.data;
     },
 };

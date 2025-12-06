@@ -29,9 +29,27 @@ public class LoanResponse {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 
+    // Servicing Fields
+    private BigDecimal disbursedAmount;
+    private LocalDate disbursementDate;
+    private Integer originalTenureMonths;
+    private BigDecimal interestRate;
+    private Integer dpd;
+    private String riskBucket;
+    private BigDecimal penalInterestRate;
+    private BigDecimal outstandingPenalty;
+    private BigDecimal prepaymentPenaltyRate;
+    private Boolean foreclosureAllowed;
+    private BigDecimal foreclosurePenaltyRate;
+    private LocalDate lastAccrualDate;
+
     // Group Loan Details
     private Boolean isGroupLoan;
     private Long groupId;
     private String groupName;
     private String groupStatus;
+
+    // User Details
+    private String userName;
+    private String userEmail;
 }

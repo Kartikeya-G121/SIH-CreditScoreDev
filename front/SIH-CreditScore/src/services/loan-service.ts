@@ -25,48 +25,42 @@ export const loanService = {
      * Get all loans for the current user
      */
     async getMyLoans(): Promise<Loan[]> {
-        const response = await api.get('/loans');
-        return response.data;
+        return await api.get('/loans');
     },
 
     /**
      * Get only active loans (ACTIVE or OVERDUE status)
      */
     async getActiveLoans(): Promise<Loan[]> {
-        const response = await api.get('/loans/active');
-        return response.data;
+        return await api.get('/loans/active');
     },
 
     /**
      * Get a specific loan by ID
      */
     async getLoanById(loanId: number): Promise<Loan> {
-        const response = await api.get(`/loans/${loanId}`);
-        return response.data;
+        return await api.get(`/loans/${loanId}`);
     },
 
     /**
      * Get past repayment history for a loan
      */
     async getRepaymentHistory(loanId: number): Promise<Repayment[]> {
-        const response = await api.get(`/loans/${loanId}/schedule`);
-        return response.data;
+        return await api.get(`/loans/${loanId}/schedule`);
     },
 
     /**
      * Get full projected repayment schedule (past + future)
      */
     async getProjectedSchedule(loanId: number): Promise<RepaymentScheduleItem[]> {
-        const response = await api.get(`/loans/${loanId}/projected-schedule`);
-        return response.data;
+        return await api.get(`/loans/${loanId}/projected-schedule`);
     },
 
     /**
      * Calculate the total payoff amount for foreclosure
      */
     async calculatePayoffAmount(loanId: number): Promise<number> {
-        const response = await api.get(`/loans/${loanId}/payoff-amount`);
-        return response.data;
+        return await api.get(`/loans/${loanId}/payoff-amount`);
     },
 
     /**

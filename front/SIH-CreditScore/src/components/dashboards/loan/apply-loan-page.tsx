@@ -14,7 +14,9 @@ import { GroupLoanDashboard } from './group-loan-dashboard';
 import type { ApplicationFormData, BeneficiaryDetailsData, ApplicationWorkflowState, LoanType } from '@/types/loan-application-types';
 import { useToast } from '@/hooks/use-toast';
 import { loanApplicationService } from '@/services/loan-application-service';
-import { Loader2 } from 'lucide-react';
+import { schemeService } from '@/services/scheme-service';
+import type { SchemeResponse } from '@/types/scheme-types';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 interface ApplyLoanPageProps {
     preSelectedSchemeId?: number;
@@ -34,6 +36,7 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId, applicationId }: A
     const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>(groupId);
     const [isLoadingApplication, setIsLoadingApplication] = useState(false);
     const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
+    const [preSelectedScheme, setPreSelectedScheme] = useState<SchemeResponse | null>(null);
 
     // State for the Application Wizard (Steps 1-3)
     const [workflowState, setWorkflowState] = useState<ApplicationWorkflowState>({
@@ -99,8 +102,17 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId, applicationId }: A
                 setSelectedGroupId(groupId);
                 setCurrentView('GROUP_DASHBOARD');
             } else if (preSelectedSchemeId) {
-                // If scheme is pre-selected, assume individual loan for now or prompt user
-                // For simplicity, let's start with Loan Type selection even if scheme is selected
+                // Fetch scheme details to check for group loan eligibility
+                try {
+                    const schemes = await schemeService.getActiveSchemes();
+                    const schemeList = Array.isArray(schemes) ? schemes : [];
+                    const scheme = schemeList.find(s => s.schemeId === preSelectedSchemeId);
+                    if (scheme) {
+                        setPreSelectedScheme(scheme);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch scheme details:', error);
+                }
                 setCurrentView('LOAN_TYPE_SELECT');
             }
         };
@@ -214,6 +226,11 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId, applicationId }: A
     };
 
     const handleStep4Back = () => {
+        if (isReadOnlyMode) {
+            // If read-only (submitted), back button should exit the wizard
+            router.push('/dashboard?tab=overview');
+            return;
+        }
         setWorkflowState(prev => ({
             ...prev,
             currentStep: 3,
@@ -248,6 +265,16 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId, applicationId }: A
                 <p className="text-muted-foreground mt-2">Choose how you want to apply for the loan</p>
             </div>
 
+            {preSelectedScheme && !preSelectedScheme.isGroupLoanAllowed && (
+                <div className="max-w-4xl mx-auto mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center gap-3 text-yellow-800">
+                    <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                    <p className="text-sm">
+                        The selected scheme <strong>{preSelectedScheme.schemeName}</strong> does not support Group Loans.
+                        Please proceed with an Individual Loan or select a different scheme later.
+                    </p>
+                </div>
+            )}
+
             <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                 <Card
                     className="cursor-pointer hover:border-primary hover:shadow-lg transition-all"
@@ -270,11 +297,17 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId, applicationId }: A
                 </Card>
 
                 <Card
-                    className="cursor-pointer hover:border-primary hover:shadow-lg transition-all"
-                    onClick={() => handleLoanTypeSelect('GROUP')}
+                    className={`transition-all ${preSelectedScheme && !preSelectedScheme.isGroupLoanAllowed
+                        ? 'opacity-50 cursor-not-allowed border-dashed'
+                        : 'cursor-pointer hover:border-primary hover:shadow-lg'
+                        }`}
+                    onClick={() => {
+                        if (preSelectedScheme && !preSelectedScheme.isGroupLoanAllowed) return;
+                        handleLoanTypeSelect('GROUP');
+                    }}
                 >
                     <CardHeader>
-                        <Users className="h-12 w-12 text-blue-600 mb-2" />
+                        <Users className={`h-12 w-12 mb-2 ${preSelectedScheme && !preSelectedScheme.isGroupLoanAllowed ? 'text-gray-400' : 'text-blue-600'}`} />
                         <CardTitle>Group Loan</CardTitle>
                         <CardDescription>
                             Apply together with your Self Help Group.
@@ -338,18 +371,22 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId, applicationId }: A
         <div className="space-y-6">
             {/* Header with Back Button */}
             <div className="flex items-center justify-between mb-4">
-                <Button
-                    variant="ghost"
-                    onClick={() => {
-                        if (loanType === 'GROUP') {
-                            setCurrentView('GROUP_DASHBOARD');
-                        } else {
-                            setCurrentView('LOAN_TYPE_SELECT');
-                        }
-                    }}
-                >
-                    ← Back to {loanType === 'GROUP' ? 'Group Dashboard' : 'Selection'}
-                </Button>
+                {!isReadOnlyMode ? (
+                    <Button
+                        variant="ghost"
+                        onClick={() => {
+                            if (loanType === 'GROUP') {
+                                setCurrentView('GROUP_DASHBOARD');
+                            } else {
+                                setCurrentView('LOAN_TYPE_SELECT');
+                            }
+                        }}
+                    >
+                        ← Back to {loanType === 'GROUP' ? 'Group Dashboard' : 'Selection'}
+                    </Button>
+                ) : (
+                    <div /> // Spacer to keep layout if needed, or just empty
+                )}
                 {loanType === 'GROUP' && (
                     <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
                         Applying as Group Member
@@ -366,14 +403,14 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId, applicationId }: A
                                 {/* Step Circle */}
                                 <div className="flex flex-col items-center">
                                     <div
-                                        className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${step.number < workflowState.currentStep
+                                        className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all ${step.number < workflowState.currentStep || (isReadOnlyMode && step.number === 4)
                                             ? 'bg-green-600 border-green-600 text-white'
                                             : step.number === workflowState.currentStep
                                                 ? 'bg-primary border-primary text-white'
                                                 : 'bg-background border-muted-foreground/30 text-muted-foreground'
                                             }`}
                                     >
-                                        {step.number < workflowState.currentStep ? (
+                                        {step.number < workflowState.currentStep || (isReadOnlyMode && step.number === 4) ? (
                                             <CheckCircle2 className="h-5 w-5" />
                                         ) : (
                                             <span className="font-semibold">{step.number}</span>

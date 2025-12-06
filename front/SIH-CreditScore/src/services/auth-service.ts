@@ -18,11 +18,10 @@ export const authService = {
      * POST /api/v1/auth/register
      */
     async register(data: RegisterRequest): Promise<AuthResponse> {
-        const response = await fetchFromApi('/auth/register', {
+        return await fetchFromApi('/auth/register', {
             method: 'POST',
             body: JSON.stringify(data),
         });
-        return response.data;
     },
 
     /**
@@ -30,11 +29,10 @@ export const authService = {
      * POST /api/v1/auth/login
      */
     async login(data: LoginRequest): Promise<AuthResponse> {
-        const response = await fetchFromApi('/auth/login', {
+        return await fetchFromApi('/auth/login', {
             method: 'POST',
             body: JSON.stringify(data),
         });
-        return response.data;
     },
 
     /**
@@ -42,21 +40,26 @@ export const authService = {
      * POST /api/v1/auth/verify-otp
      */
     async verifyOtp(data: VerifyOtpRequest): Promise<AuthResponse> {
-        const response = await fetchFromApi('/auth/verify-otp', {
+        return await fetchFromApi('/auth/verify-otp', {
             method: 'POST',
             body: JSON.stringify(data),
         });
-        return response.data;
     },
 
     /**
      * Resend OTP to phone/email
      * POST /api/v1/auth/resend-otp
      */
-    async resendOtp(phoneNumber: string): Promise<void> {
+    async resendOtp(identifier: string): Promise<void> {
+        // Determine if identifier is email or phone
+        const isEmail = identifier.includes('@');
+        const body = isEmail
+            ? { email: identifier }
+            : { phoneNumber: identifier };
+
         await fetchFromApi('/auth/resend-otp', {
             method: 'POST',
-            body: JSON.stringify({ phoneNumber }),
+            body: JSON.stringify(body),
         });
     },
 
@@ -65,11 +68,10 @@ export const authService = {
      * POST /api/v1/auth/refresh-token
      */
     async refreshToken(refreshToken: string): Promise<AuthResponse> {
-        const response = await fetchFromApi('/auth/refresh-token', {
+        return await fetchFromApi('/auth/refresh-token', {
             method: 'POST',
             body: JSON.stringify({ refreshToken }),
         });
-        return response.data;
     },
 
     /**
@@ -112,7 +114,6 @@ export const authService = {
      * GET /api/v1/auth/email-config-status
      */
     async getEmailConfigStatus(): Promise<string> {
-        const response = await fetchFromApi('/auth/email-config-status');
-        return response.data;
+        return await fetchFromApi('/auth/email-config-status');
     },
 };

@@ -81,14 +81,17 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
             try {
                 setIsLoadingSchemes(true);
                 const response = await schemeService.getActiveSchemes();
-                setSchemes(response.schemes || []);
+                const schemeList = Array.isArray(response) ? response : [];
+                setSchemes(schemeList);
 
-                // If pre-selected scheme, find and set it
-                if (preSelectedSchemeId) {
-                    const scheme = response.schemes?.find(s => s.schemeId === preSelectedSchemeId);
+                // If pre-selected scheme or initial data has scheme, find and set it
+                const targetSchemeId = preSelectedSchemeId || initialData?.schemeId;
+
+                if (targetSchemeId) {
+                    const scheme = schemeList.find(s => s.schemeId === targetSchemeId);
                     if (scheme) {
                         setSelectedScheme(scheme);
-                        form.setValue('schemeId', preSelectedSchemeId);
+                        form.setValue('schemeId', targetSchemeId);
 
                         // Use initial tenure if available, otherwise default to min
                         const targetTenure = initialData?.tenureMonths || scheme.minTenureMonths;
@@ -109,21 +112,35 @@ export function ApplicationFormStep({ preSelectedSchemeId, groupId, onNext, init
         };
 
         fetchSchemes();
-    }, [preSelectedSchemeId, toast, form]);
+    }, [preSelectedSchemeId, initialData, toast, form]);
 
     // Define categories based on admin options
     const categories = ['All', 'Agriculture', 'Business', 'Education', 'Personal', 'Housing'];
 
     // Filter schemes based on selected category
-    const filteredSchemes = schemes.filter(s =>
-        selectedCategory === 'All' || (s.loanCategory || 'Other') === selectedCategory
-    );
+    // Filter schemes based on selected category and group loan eligibility
+    const filteredSchemes = schemes.filter(s => {
+        const matchesCategory = selectedCategory === 'All' || (s.loanCategory || 'Other') === selectedCategory;
+        const matchesGroupLoan = isGroupLoan ? s.isGroupLoanAllowed : true;
+        return matchesCategory && matchesGroupLoan;
+    });
 
+    // Update selected scheme when scheme ID changes
     // Update selected scheme when scheme ID changes
     const handleSchemeChange = (schemeId: string) => {
         const scheme = schemes.find(s => s.schemeId === parseInt(schemeId));
         setSelectedScheme(scheme || null);
         if (scheme) {
+            // Only reset tenure if the current tenure is invalid for the new scheme
+            // or if we are switching schemes (not loading initial data)
+            // Actually, when loading initial data, this handler isn't called directly.
+            // But if user changes scheme manually, we should reset to min.
+            // However, the issue is likely that when the component mounts and sets the scheme from initialData,
+            // it might be triggering something or the initial state isn't being set correctly.
+
+            // Wait, the useEffect at line 79 handles initial load.
+            // Let's check that logic.
+
             setTenureMonths(scheme.minTenureMonths);
             form.setValue('tenureMonths', scheme.minTenureMonths);
         }

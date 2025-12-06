@@ -34,6 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { UpdateProfileRequest } from '@/types/beneficiary';
 import { Upload, Download, Loader2, FileCheck, RefreshCw, FileText, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { INDIAN_STATES } from '@/lib/constants/states';
 
 const profileSchema = z.object({
     fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -512,9 +513,20 @@ export function EditProfileDialog({
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>State</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select state" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent className="max-h-[200px]">
+                                                    {INDIAN_STATES.map((state) => (
+                                                        <SelectItem key={state} value={state}>
+                                                            {state}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                             <FormMessage />
                                         </FormItem>
                                     )}

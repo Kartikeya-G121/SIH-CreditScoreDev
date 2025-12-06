@@ -1,5 +1,5 @@
 import { fetchFromApi } from '@/lib/api';
-import type { ConsentData, ApplicationStatus, LoanType, ApplicationDraftRequest, ApplicationResponse, GroupApplicationStatus, GroupApplicationStatusResponse } from '@/types/loan-application-types';
+import type { ConsentData, ApplicationStatus, LoanType, LoanApplicationRequest, ApplicationResponse, GroupApplicationStatus, GroupApplicationStatusResponse, ReviewRequest, SanctionRequest, TimelineResponse } from '@/types/loan-application-types';
 import type { GroupResponse } from '@/types/group-types';
 
 export const loanApplicationService = {
@@ -37,9 +37,7 @@ export const loanApplicationService = {
             console.log('User groups response:', response);
 
             // Handle different response structures
-            if (response.data && Array.isArray(response.data)) {
-                return response.data;
-            } else if (Array.isArray(response)) {
+            if (Array.isArray(response)) {
                 return response;
             } else if (response.groups && Array.isArray(response.groups)) {
                 return response.groups;
@@ -58,8 +56,7 @@ export const loanApplicationService = {
      */
     async getGroupById(groupId: number): Promise<GroupResponse> {
         try {
-            const response = await fetchFromApi(`/groups/${groupId}`);
-            return response.data;
+            return await fetchFromApi(`/groups/${groupId}`);
         } catch (error) {
             console.error('Failed to fetch group details:', error);
             throw error;
@@ -78,15 +75,14 @@ export const loanApplicationService = {
             const group = await this.getGroupById(groupId);
 
             // 2. Fetch Group Status from API (The "War Room" endpoint)
-            const response = await fetchFromApi(`/applications/group/${groupId}/status`);
-            const memberStatuses: GroupApplicationStatusResponse[] = response.data;
+            const memberStatuses: GroupApplicationStatusResponse[] = await fetchFromApi(`/applications/group/${groupId}/status`);
 
             // 3. Map API response to UI model
             const members = memberStatuses.map(ms => ({
                 userId: ms.userId,
                 userName: ms.userName,
                 role: ms.role,
-                status: ms.status === 'NOT_APPLIED' ? 'NOT_STARTED' : ms.status,
+                status: (ms.status === 'NOT_APPLIED' ? 'NOT_STARTED' : ms.status) as 'NOT_STARTED' | 'DRAFT' | 'SUBMITTED',
                 applicationId: ms.applicationId || undefined,
                 // We don't get amount in status response, but we could fetch it if needed.
                 // For the dashboard list, status is most important.
@@ -115,10 +111,9 @@ export const loanApplicationService = {
      */
     async submitGroupApplication(groupId: number): Promise<ApplicationResponse> {
         try {
-            const response = await fetchFromApi(`/applications/group/${groupId}/submit`, {
+            return await fetchFromApi(`/applications/group/${groupId}/submit`, {
                 method: 'POST',
             });
-            return response.data;
         } catch (error) {
             console.error('Failed to submit group application:', error);
             throw error;
@@ -153,13 +148,12 @@ export const loanApplicationService = {
     /**
      * Create a draft loan application
      */
-    async createDraftApplication(data: ApplicationDraftRequest): Promise<ApplicationResponse> {
+    async createDraftApplication(data: LoanApplicationRequest): Promise<ApplicationResponse> {
         try {
-            const response = await fetchFromApi('/applications', {
+            return await fetchFromApi('/applications', {
                 method: 'POST',
                 body: JSON.stringify(data),
             });
-            return response.data;
         } catch (error) {
             console.error('Failed to create draft application:', error);
             throw error;
@@ -169,13 +163,12 @@ export const loanApplicationService = {
     /**
      * Update an existing draft application
      */
-    async updateDraftApplication(applicationId: number, data: ApplicationDraftRequest): Promise<ApplicationResponse> {
+    async updateDraftApplication(applicationId: number, data: LoanApplicationRequest): Promise<ApplicationResponse> {
         try {
-            const response = await fetchFromApi(`/applications/${applicationId}`, {
+            return await fetchFromApi(`/applications/${applicationId}`, {
                 method: 'PUT',
                 body: JSON.stringify(data),
             });
-            return response.data;
         } catch (error) {
             console.error('Failed to update draft application:', error);
             throw error;
@@ -187,10 +180,9 @@ export const loanApplicationService = {
      */
     async submitApplication(applicationId: number): Promise<ApplicationResponse> {
         try {
-            const response = await fetchFromApi(`/applications/${applicationId}/submit`, {
+            return await fetchFromApi(`/applications/${applicationId}/submit`, {
                 method: 'POST',
             });
-            return response.data;
         } catch (error) {
             console.error('Failed to submit application:', error);
             throw error;
@@ -202,8 +194,7 @@ export const loanApplicationService = {
      */
     async getApplicationById(applicationId: number): Promise<ApplicationResponse> {
         try {
-            const response = await fetchFromApi(`/applications/${applicationId}`);
-            return response.data;
+            return await fetchFromApi(`/applications/${applicationId}`);
         } catch (error) {
             console.error('Failed to fetch application:', error);
             throw error;
@@ -216,7 +207,7 @@ export const loanApplicationService = {
     async getMyApplications(): Promise<ApplicationResponse[]> {
         try {
             const response = await fetchFromApi('/applications');
-            return response.data || [];
+            return response || [];
         } catch (error) {
             console.error('Failed to fetch applications:', error);
             throw error;
@@ -228,12 +219,73 @@ export const loanApplicationService = {
      */
     async withdrawApplication(applicationId: number): Promise<ApplicationResponse> {
         try {
-            const response = await fetchFromApi(`/applications/${applicationId}/withdraw`, {
+            return await fetchFromApi(`/applications/${applicationId}/withdraw`, {
                 method: 'POST',
             });
-            return response.data;
         } catch (error) {
             console.error('Failed to withdraw application:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get application timeline
+     */
+    async getApplicationTimeline(applicationId: number): Promise<TimelineResponse> {
+        try {
+            return await fetchFromApi(`/applications/${applicationId}/timeline`);
+        } catch (error) {
+            console.error('Failed to fetch application timeline:', error);
+            throw error;
+        }
+    },
+
+    // ==================== Admin/Officer Methods ====================
+
+    /**
+     * Get pending applications (Officer/Admin only)
+     */
+    async getPendingApplications(): Promise<ApplicationResponse[]> {
+        try {
+            return await fetchFromApi('/applications/officer/pending');
+        } catch (error) {
+            console.error('Failed to fetch pending applications:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Review an application (Officer/Admin only)
+     */
+    async reviewApplication(
+        applicationId: number,
+        request: ReviewRequest
+    ): Promise<ApplicationResponse> {
+        try {
+            return await fetchFromApi(`/applications/${applicationId}/review`, {
+                method: 'PUT',
+                body: JSON.stringify(request),
+            });
+        } catch (error) {
+            console.error('Failed to review application:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Sanction an application (Officer/Admin only)
+     */
+    async sanctionApplication(
+        applicationId: number,
+        request: SanctionRequest
+    ): Promise<ApplicationResponse> {
+        try {
+            return await fetchFromApi(`/applications/${applicationId}/sanction`, {
+                method: 'POST',
+                body: JSON.stringify(request),
+            });
+        } catch (error) {
+            console.error('Failed to sanction application:', error);
             throw error;
         }
     },

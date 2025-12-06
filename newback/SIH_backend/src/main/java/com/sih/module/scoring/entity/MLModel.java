@@ -39,6 +39,9 @@ public class MLModel {
     
     @Column(name = "trained_on")
     private LocalDate trainedOn;
+
+    @Column(name = "artifact_path", length = 500)
+    private String artifactPath;
     
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metrics", columnDefinition = "jsonb")

@@ -25,6 +25,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import com.sih.module.loan.dto.LoanSearchCriteria;
+import com.sih.module.loan.repository.LoanSpecification;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -37,6 +45,21 @@ public class LoanService {
     private final BorrowerGroupRepository groupRepository;
     private final GroupMemberRepository memberRepository;
     private final com.sih.module.group.service.GroupService groupService;
+    private final RepaymentScheduleService scheduleService;
+
+    public Page<LoanResponse> searchLoans(LoanSearchCriteria criteria) {
+        Sort sort = Sort.by(
+            criteria.getSortDir().equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC,
+            criteria.getSortBy()
+        );
+        
+        Pageable pageable = PageRequest.of(criteria.getPage(), criteria.getSize(), sort);
+        Specification<Loan> spec = LoanSpecification.getSpecification(criteria);
+        
+        Page<Loan> loans = loanRepository.findAll(spec, pageable);
+        
+        return loans.map(this::mapToResponse);
+    }
 
     @Transactional
     public Loan createLoanFromApplication(Long applicationId) {
@@ -50,11 +73,16 @@ public class LoanService {
         // Calculate EMI and schedule
         BigDecimal principal = application.getSanctionedAmount();
         BigDecimal interestRate = application.getFinalInterestRate();
-        Integer tenureMonths = application.getScheme() != null ? application.getScheme().getMaxTenureMonths() : 12;
+        Integer tenureMonths = application.getTenureMonths() != null ? application.getTenureMonths() : (application.getScheme() != null ? application.getScheme().getMaxTenureMonths() : 12);
 
         BigDecimal monthlyRate = interestRate.divide(BigDecimal.valueOf(1200), 10, java.math.RoundingMode.HALF_UP);
         BigDecimal emi = calculateEMI(principal, monthlyRate, tenureMonths);
         BigDecimal totalInterest = emi.multiply(BigDecimal.valueOf(tenureMonths)).subtract(principal);
+
+        // Derive penalty rate from scheme, fallback to 1.5% if not set
+        BigDecimal penaltyRate = (application.getScheme() != null && application.getScheme().getPenaltyRate() != null)
+                ? application.getScheme().getPenaltyRate()
+                : BigDecimal.valueOf(1.5);
 
         Loan loan = Loan.builder()
                 .application(application)
@@ -64,18 +92,28 @@ public class LoanService {
                 .monthlyEmi(emi)
                 .outstandingPrincipal(principal)
                 .outstandingInterest(totalInterest)
+                .disbursedAmount(principal)
+                .originalTenureMonths(tenureMonths)
                 .startDate(LocalDate.now())
                 .endDate(LocalDate.now().plusMonths(tenureMonths))
                 .loanStatus("ACTIVE")
                 .nextPaymentDate(LocalDate.now().plusMonths(1))
                 .interestRate(interestRate)
+                .penalInterestRate(penaltyRate) // Derived from scheme
                 .remainingTenure(tenureMonths)
                 .lastPaymentDate(LocalDate.now().minusDays(1)) // Set to yesterday so first payment accrues interest from today
                 .accumulatedInterest(BigDecimal.ZERO)
+                .dpd(0)
+                .riskBucket("NORMAL")
+                .outstandingPenalty(BigDecimal.ZERO)
                 .build();
 
         loan = loanRepository.save(loan);
         log.info("Loan created from application: {}", applicationId);
+
+        // Generate initial repayment schedule
+        scheduleService.generateInitialSchedule(loan);
+        log.info("Repayment schedule generated for loan: {}", loan.getLoanId());
 
         return loan;
     }
@@ -99,6 +137,12 @@ public class LoanService {
         return mapToResponse(loan);
     }
 
+    /**
+     * @deprecated Use {@link LoanRepaymentService#processEmiPayment(Long, PaymentRequest)} instead.
+     * This method does not properly handle penalties, DPD recalculation, or grace periods.
+     * Kept for backward compatibility only.
+     */
+    @Deprecated
     @Transactional
     public void makeRepayment(Long loanId, Long userId, PaymentRequest request) {
         Loan loan = loanRepository.findById(loanId)
@@ -396,63 +440,30 @@ public class LoanService {
     }
 
     public List<com.sih.module.loan.dto.RepaymentScheduleDTO> getProjectedSchedule(Long loanId) {
-        Loan loan = loanRepository.findById(loanId)
-                .orElseThrow(() -> new ResourceNotFoundException("Loan not found"));
-
-        List<com.sih.module.loan.dto.RepaymentScheduleDTO> schedule = new java.util.ArrayList<>();
-
-        // Add past repayments
-        List<Repayment> pastRepayments = repaymentRepository.findByLoanLoanId(loanId);
-        int installmentCount = 1;
-
-        for (Repayment r : pastRepayments) {
-            schedule.add(com.sih.module.loan.dto.RepaymentScheduleDTO.builder()
-                    .installmentNumber(installmentCount++)
-                    .dueDate(r.getDueDate())
-                    .emiAmount(r.getAmountPaid())
-                    .principalComponent(r.getPrincipalComponent())
-                    .interestComponent(r.getInterestComponent())
-                    .outstandingPrincipal(BigDecimal.ZERO) // We don't track historical outstanding easily here without
-                                                           // replay
-                    .status("PAID")
-                    .build());
-        }
-
-        // Project future
-        if ("ACTIVE".equals(loan.getLoanStatus())) {
-            BigDecimal outstanding = loan.getOutstandingPrincipal();
-            BigDecimal rate = loan.getInterestRate();
-            BigDecimal monthlyRate = rate.divide(BigDecimal.valueOf(1200), 10, java.math.RoundingMode.HALF_UP);
-            int remainingTenure = loan.getRemainingTenure();
-            LocalDate nextDate = loan.getNextPaymentDate();
-
-            for (int i = 0; i < remainingTenure; i++) {
-                BigDecimal interest = outstanding.multiply(monthlyRate).setScale(2, java.math.RoundingMode.HALF_UP);
-                BigDecimal emi = loan.getMonthlyEmi();
-
-                // Adjust last EMI
-                if (i == remainingTenure - 1) {
-                    emi = outstanding.add(interest);
-                }
-
-                BigDecimal principal = emi.subtract(interest);
-                outstanding = outstanding.subtract(principal);
-                if (outstanding.compareTo(BigDecimal.ZERO) < 0)
-                    outstanding = BigDecimal.ZERO;
-
-                schedule.add(com.sih.module.loan.dto.RepaymentScheduleDTO.builder()
-                        .installmentNumber(installmentCount++)
-                        .dueDate(nextDate.plusMonths(i))
-                        .emiAmount(emi)
-                        .principalComponent(principal)
-                        .interestComponent(interest)
-                        .outstandingPrincipal(outstanding)
-                        .status("UPCOMING")
-                        .build());
-            }
-        }
-
-        return schedule;
+        // Return confirmed schedule from DB (SSOT) instead of re-projecting.
+        return repaymentRepository.findByLoanLoanId(loanId).stream()
+                .filter(r -> {
+                    // Filter out "Ghost Rows" (Artifacts where status is COMPLETED/PAID but amount is near zero)
+                    // This fixes the issue where prepayments left 0-val rows that confused the UI.
+                    if (("COMPLETED".equals(r.getStatus()) || "PAID".equals(r.getStatus())) 
+                        && r.getAmountPaid() != null && r.getAmountPaid().compareTo(BigDecimal.ONE) < 0
+                        && r.getAmountDue().compareTo(BigDecimal.ONE) < 0) {
+                        return false; 
+                    }
+                    return true;
+                })
+                .sorted(java.util.Comparator.comparing(Repayment::getDueDate))
+                .map(r -> com.sih.module.loan.dto.RepaymentScheduleDTO.builder()
+                        .installmentNumber(r.getRepaymentId().intValue()) // Temporary ID mapping
+                        .dueDate(r.getDueDate())
+                        .emiAmount(r.getAmountDue())
+                        .principalComponent(r.getPrincipalComponent())
+                        .interestComponent(r.getInterestComponent())
+                        .penaltyComponent(r.getPenaltyComponent())
+                        .paidDate(r.getPaidDate())
+                        .status(r.getStatus())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
     }
 
     private BigDecimal calculateEMI(BigDecimal principal, BigDecimal monthlyRate, Integer tenure) {
@@ -477,6 +488,12 @@ public class LoanService {
                 .monthlyEmi(loan.getMonthlyEmi())
                 .outstandingPrincipal(loan.getOutstandingPrincipal())
                 .outstandingInterest(loan.getOutstandingInterest())
+                .disbursedAmount(loan.getDisbursedAmount())
+                .originalTenureMonths(loan.getOriginalTenureMonths())
+                .interestRate(loan.getInterestRate())
+                .dpd(loan.getDpd())
+                .riskBucket(loan.getRiskBucket())
+                .outstandingPenalty(loan.getOutstandingPenalty())
                 .startDate(loan.getStartDate())
                 .endDate(loan.getEndDate())
                 .loanStatus(loan.getLoanStatus())
@@ -487,6 +504,8 @@ public class LoanService {
                 .groupId(loan.getGroup() != null ? loan.getGroup().getGroupId() : null)
                 .groupName(loan.getGroup() != null ? loan.getGroup().getGroupName() : null)
                 .groupStatus(loan.getGroup() != null ? loan.getGroup().getGroupStatus() : null)
+                .userName(loan.getUser().getBeneficiaryProfile() != null ? loan.getUser().getBeneficiaryProfile().getFullName() : "Unknown")
+                .userEmail(loan.getUser().getEmail())
                 .build();
     }
 
@@ -589,4 +608,5 @@ public class LoanService {
             }
         }
     }
+
 }

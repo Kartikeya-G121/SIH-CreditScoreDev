@@ -4,9 +4,9 @@ export async function fetchFromApi(endpoint: string, options: RequestInit = {}) 
   const token = localStorage.getItem('credit-assist-token');
   const headers: HeadersInit = options.headers || {};
 
-  // Only set Content-Type for JSON requests
-  // For FormData, let the browser set it automatically with the boundary
-  if (!(options.body instanceof FormData)) {
+  // Only set Content-Type for JSON requests if not already set
+  // For FormData or form-urlencoded, let the browser/caller set it
+  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
     (headers as any)['Content-Type'] = 'application/json';
   }
 
@@ -27,6 +27,13 @@ export async function fetchFromApi(endpoint: string, options: RequestInit = {}) 
     throw new Error(errorData.error || errorData.message || `API call failed: ${response.statusText}`);
   }
 
-  return response.json();
+  const jsonResponse = await response.json();
+
+  // Extract data from ApiResponse wrapper if present
+  if (jsonResponse && typeof jsonResponse === 'object' && 'data' in jsonResponse) {
+    return jsonResponse.data;
+  }
+
+  return jsonResponse;
 }
 

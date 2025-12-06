@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +24,7 @@ public class SchemeService {
 
     @Transactional
     @CacheEvict(value = "schemes", allEntries = true)
-    public SchemeResponse createScheme(SchemeRequest request) {
+    public SchemeResponse createScheme(SchemeRequest request, String createdBy) {
         LoanScheme scheme = LoanScheme.builder()
                 .schemeName(request.getSchemeName())
                 .providerName(request.getProviderName())
@@ -36,6 +37,22 @@ public class SchemeService {
                 .isTieredInterest(request.getIsTieredInterest() != null ? request.getIsTieredInterest() : false)
                 .tierThreshold(request.getTierThreshold())
                 .tierInterestRate(request.getTierInterestRate())
+                .minAge(request.getMinAge())
+                .maxAge(request.getMaxAge())
+                .genderAllowed(request.getGenderAllowed())
+                .casteCategory(request.getCasteCategory())
+                .incomeMax(request.getIncomeMax())
+                .maxExistingLoans(request.getMaxExistingLoans() != null ? request.getMaxExistingLoans() : 1)
+                .isSubsidy(request.getIsSubsidy() != null ? request.getIsSubsidy() : false)
+                .subsidyType(request.getSubsidyType())
+                .subsidyPercentage(request.getSubsidyPercentage())
+                .gracePeriodDays(request.getGracePeriodDays() != null ? request.getGracePeriodDays() : 0)
+                .penaltyRate(request.getPenaltyRate())
+                .emiBounceCharges(request.getEmiBounceCharges() != null ? request.getEmiBounceCharges() : java.math.BigDecimal.ZERO)
+                .allowPrepayment(request.getAllowPrepayment() != null ? request.getAllowPrepayment() : true)
+                .prepaymentPenalty(request.getPrepaymentPenalty() != null ? request.getPrepaymentPenalty() : java.math.BigDecimal.ZERO)
+                .isGroupLoanAllowed(request.getIsGroupLoanAllowed() != null ? request.getIsGroupLoanAllowed() : false)
+                .createdBy(createdBy)
                 .isActive(true)
                 .build();
 
@@ -94,13 +111,32 @@ public class SchemeService {
             scheme.setTierThreshold(request.getTierThreshold());
         if (request.getTierInterestRate() != null)
             scheme.setTierInterestRate(request.getTierInterestRate());
+        
+        if (request.getMinAge() != null) scheme.setMinAge(request.getMinAge());
+        if (request.getMaxAge() != null) scheme.setMaxAge(request.getMaxAge());
+        if (request.getGenderAllowed() != null) scheme.setGenderAllowed(request.getGenderAllowed());
+        if (request.getCasteCategory() != null) scheme.setCasteCategory(request.getCasteCategory());
+        if (request.getIncomeMax() != null) scheme.setIncomeMax(request.getIncomeMax());
+        if (request.getMaxExistingLoans() != null) scheme.setMaxExistingLoans(request.getMaxExistingLoans());
+        if (request.getIsSubsidy() != null) scheme.setIsSubsidy(request.getIsSubsidy());
+        if (request.getSubsidyType() != null) scheme.setSubsidyType(request.getSubsidyType());
+        if (request.getSubsidyPercentage() != null) scheme.setSubsidyPercentage(request.getSubsidyPercentage());
+        if (request.getGracePeriodDays() != null) scheme.setGracePeriodDays(request.getGracePeriodDays());
+        if (request.getPenaltyRate() != null) scheme.setPenaltyRate(request.getPenaltyRate());
+        if (request.getEmiBounceCharges() != null) scheme.setEmiBounceCharges(request.getEmiBounceCharges());
+        if (request.getAllowPrepayment() != null) scheme.setAllowPrepayment(request.getAllowPrepayment());
+        if (request.getPrepaymentPenalty() != null) scheme.setPrepaymentPenalty(request.getPrepaymentPenalty());
+        if (request.getIsGroupLoanAllowed() != null) scheme.setIsGroupLoanAllowed(request.getIsGroupLoanAllowed());
 
         scheme = schemeRepository.save(scheme);
         return mapToResponse(scheme);
     }
 
     @Transactional
-    @CacheEvict(value = "schemes", allEntries = true)
+    @Caching(evict = {
+        @CacheEvict(value = "schemes", allEntries = true),
+        @CacheEvict(value = "loanPortfolioAnalytics", allEntries = true)
+    })
     public SchemeResponse toggleScheme(Integer schemeId) {
         LoanScheme scheme = schemeRepository.findById(schemeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Scheme not found"));
@@ -110,6 +146,16 @@ public class SchemeService {
 
         log.info("Scheme {} toggled to: {}", schemeId, scheme.getIsActive());
         return mapToResponse(scheme);
+    }
+
+    @Transactional
+    @CacheEvict(value = "schemes", allEntries = true)
+    public void deleteScheme(Integer schemeId) {
+        if (!schemeRepository.existsById(schemeId)) {
+            throw new ResourceNotFoundException("Scheme not found");
+        }
+        schemeRepository.deleteById(schemeId);
+        log.info("Scheme {} deleted", schemeId);
     }
 
     private SchemeResponse mapToResponse(LoanScheme scheme) {
@@ -126,6 +172,22 @@ public class SchemeService {
                 .isTieredInterest(scheme.getIsTieredInterest())
                 .tierThreshold(scheme.getTierThreshold())
                 .tierInterestRate(scheme.getTierInterestRate())
+                .minAge(scheme.getMinAge())
+                .maxAge(scheme.getMaxAge())
+                .genderAllowed(scheme.getGenderAllowed())
+                .casteCategory(scheme.getCasteCategory())
+                .incomeMax(scheme.getIncomeMax())
+                .maxExistingLoans(scheme.getMaxExistingLoans())
+                .isSubsidy(scheme.getIsSubsidy())
+                .subsidyType(scheme.getSubsidyType())
+                .subsidyPercentage(scheme.getSubsidyPercentage())
+                .gracePeriodDays(scheme.getGracePeriodDays())
+                .penaltyRate(scheme.getPenaltyRate())
+                .emiBounceCharges(scheme.getEmiBounceCharges())
+                .allowPrepayment(scheme.getAllowPrepayment())
+                .prepaymentPenalty(scheme.getPrepaymentPenalty())
+                .isGroupLoanAllowed(scheme.getIsGroupLoanAllowed())
+                .createdBy(scheme.getCreatedBy())
                 .isActive(scheme.getIsActive())
                 .createdAt(scheme.getCreatedAt())
                 .build();

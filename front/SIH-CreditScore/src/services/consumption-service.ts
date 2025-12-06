@@ -15,7 +15,7 @@ export const consumptionService = {
     async getMyEntries(): Promise<ConsumptionEntry[]> {
         try {
             const response = await fetchFromApi('/consumption');
-            return response.data || [];
+            return response || [];
         } catch (error) {
             console.error('Failed to fetch consumption entries:', error);
             throw error;
@@ -85,7 +85,7 @@ export const consumptionService = {
                 headers: undefined,
             });
 
-            return response.data;
+            return response;
         } catch (error) {
             console.error('Failed to upload bill:', error);
             throw error;
@@ -109,7 +109,7 @@ export const consumptionService = {
                 headers: undefined,
             });
 
-            return response.data || [];
+            return response || [];
         } catch (error) {
             console.error('Failed to upload bill batch:', error);
             throw error;

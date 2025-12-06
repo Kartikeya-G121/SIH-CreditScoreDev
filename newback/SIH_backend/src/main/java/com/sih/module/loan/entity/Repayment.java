@@ -65,7 +65,23 @@ public class Repayment {
 
     @Column(name = "status", length = 20)
     @Builder.Default
-    private String status = "COMPLETED"; // PENDING, COMPLETED, FAILED
+    private String status = "PENDING"; // PENDING, DUE, PARTIAL, COMPLETED, OVERDUE, FAILED, CANCELLED, WAIVED_OFF
+
+    @Column(name = "penalty_component", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal penaltyComponent = BigDecimal.ZERO;
+
+    @Column(name = "other_charges", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal otherCharges = BigDecimal.ZERO;
+
+    @Column(name = "schedule_version")
+    @Builder.Default
+    private Integer scheduleVersion = 1;
+
+    @Column(name = "is_projected")
+    @Builder.Default
+    private Boolean isProjected = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default

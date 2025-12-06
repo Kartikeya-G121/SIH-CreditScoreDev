@@ -33,6 +33,7 @@ import { beneficiaryService } from '@/services/beneficiary-service';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload } from 'lucide-react';
 import type { CreateProfileRequest } from '@/types/beneficiary';
+import { INDIAN_STATES } from '@/lib/constants/states';
 
 const profileSchema = z.object({
     fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -274,9 +275,20 @@ export function CreateProfileDialog({
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>State *</FormLabel>
-                                            <FormControl>
-                                                <Input {...field} />
-                                            </FormControl>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select state" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent className="max-h-[200px]">
+                                                    {INDIAN_STATES.map((state) => (
+                                                        <SelectItem key={state} value={state}>
+                                                            {state}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                             <FormMessage />
                                         </FormItem>
                                     )}

@@ -19,5 +19,7 @@ public class RepaymentScheduleDTO {
     private BigDecimal principalComponent;
     private BigDecimal interestComponent;
     private BigDecimal outstandingPrincipal;
-    private String status; // PAID, UPCOMING, OVERDUE
+    private BigDecimal penaltyComponent;
+    private LocalDate paidDate;
+    private String status; // PAID, UPCOMING, OVERDUE, etc.
 }

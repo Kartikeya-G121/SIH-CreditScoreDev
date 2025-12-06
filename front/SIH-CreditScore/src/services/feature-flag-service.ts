@@ -13,8 +13,7 @@ export const featureFlagService = {
      * GET /api/v1/admin/feature-flags
      */
     async listFlags(): Promise<FeatureFlagResponse[]> {
-        const response = await fetchFromApi('/admin/feature-flags');
-        return response.data;
+        return await fetchFromApi('/admin/feature-flags');
     },
 
     /**
@@ -25,10 +24,9 @@ export const featureFlagService = {
         flagName: string,
         data: FeatureFlagUpdateRequest
     ): Promise<FeatureFlagResponse> {
-        const response = await fetchFromApi(`/admin/feature-flags/${flagName}`, {
+        return await fetchFromApi(`/admin/feature-flags/${flagName}`, {
             method: 'PUT',
             body: JSON.stringify(data),
         });
-        return response.data;
     },
 };

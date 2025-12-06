@@ -132,6 +132,17 @@ bbps:
 
 # Application Configuration
 
+# ML Service Configuration
+ml:
+  risk:
+    api:
+      url: ${ML_RISK_API_URL:http://localhost:5001}
+    model:
+      version: ${ML_RISK_MODEL_VERSION:v1}
+  income:
+    api:
+      url: ${ML_INCOME_API_URL:http://localhost:5002}
+
 # Logging
 logging:
   level:
@@ -143,6 +154,11 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/spring.log
+    max-size: 10MB
+    max-history: 7
+    total-size-cap: 100MB
 
 # Actuator
 management:

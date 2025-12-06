@@ -24,21 +24,39 @@ export function LoginForm() {
     event.preventDefault();
     setIsLoading(true);
 
-    const success = await login(email, password);
+    try {
+      const success = await login(email, password);
 
-    if (success) {
-      toast({
-        title: 'Login Successful',
-        description: 'Redirecting to your dashboard...',
-      });
-      router.push('/dashboard');
-    } else {
-      toast({
-        title: 'Login Failed',
-        description: 'Invalid email or password. Please try again.',
-        variant: 'destructive',
-      });
-      setIsLoading(false);
+      if (success) {
+        toast({
+          title: 'Login Successful',
+          description: 'Redirecting to your dashboard...',
+        });
+        router.push('/dashboard');
+      } else {
+        toast({
+          title: 'Login Failed',
+          description: 'Invalid email or password. Please try again.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+      }
+    } catch (error: any) {
+      // Handle redirect to OTP verification
+      if (error?.message === 'REDIRECT_TO_OTP') {
+        toast({
+          title: 'Account Not Verified',
+          description: 'Please verify your OTP to activate your account.',
+        });
+        // Don't set loading to false, let the redirect happen
+      } else {
+        toast({
+          title: 'Login Failed',
+          description: 'An error occurred. Please try again.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+      }
     }
   };
 

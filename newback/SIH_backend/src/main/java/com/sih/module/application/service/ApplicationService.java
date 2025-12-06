@@ -35,8 +35,9 @@ public class ApplicationService {
     private final GroupMemberRepository groupMemberRepository;
     private final BeneficiaryProfileRepository beneficiaryProfileRepository;
     private final LoanSchemeRepository schemeRepository;
-    private final FailSafeConfig failSafeConfig;
+    private final com.sih.module.auth.service.EmailService emailService;
     private final com.sih.module.loan.service.LoanService loanService;
+    private final FailSafeConfig failSafeConfig;
 
     @Transactional
     public ApplicationResponse createApplication(Long userId, ApplicationRequest request) {
@@ -270,9 +271,26 @@ public class ApplicationService {
 
         if (request.getApproved() != null && request.getApproved()) {
             application.setStatus("APPROVED");
+            
+            // Send Approval Email
+            String email = application.getUser().getEmail();
+            String name = beneficiaryProfileRepository.findByUserUserId(application.getUser().getUserId())
+                    .map(p -> p.getFullName()).orElse("User");
+            String subject = "Loan Application Approved - #" + applicationId;
+            String body = String.format("Dear %s,\n\nCongratulations! Your loan application #%d has been APPROVED by the bank officer.\n\nNext Step: Sanctioning.\n\nYou will be notified once the loan is sanctioned.\n\nBest Regards,\nUdaan Team", name, applicationId);
+            emailService.sendEmail(email, subject, body);
+
         } else {
             application.setStatus("REJECTED");
             application.setRejectionReason(request.getComments());
+            
+            // Send Rejection Email
+            String email = application.getUser().getEmail();
+            String name = beneficiaryProfileRepository.findByUserUserId(application.getUser().getUserId())
+                    .map(p -> p.getFullName()).orElse("User");
+            String subject = "Loan Application Rejected - #" + applicationId;
+            String body = String.format("Dear %s,\n\nWe regret to inform you that your loan application #%d has been REJECTED.\n\nReason: %s\n\nYou may contact the branch for further details or apply again later.\n\nBest Regards,\nUdaan Team", name, applicationId, request.getComments());
+            emailService.sendEmail(email, subject, body);
         }
 
         application.setStageTimestamp(java.time.OffsetDateTime.now());
@@ -313,6 +331,15 @@ public class ApplicationService {
 
         application = applicationRepository.save(application);
         log.info("Application {} sanctioned: {} at {}%", applicationId, request.getAmount(), request.getInterestRate());
+
+        // Send Sanction Email
+        String email = application.getUser().getEmail();
+        String name = beneficiaryProfileRepository.findByUserUserId(application.getUser().getUserId())
+                .map(p -> p.getFullName()).orElse("User");
+        String subject = "Loan Application Sanctioned - #" + applicationId;
+        String body = String.format("Dear %s,\n\nGreat News! Your loan application #%d has been SANCTIONED.\n\nSanctioned Amount: ₹%s\nInterest Rate: %s%%\n\nThe loan account has been created and funds will be ready for disbursement shortly.\n\nBest Regards,\nUdaan Team", 
+            name, applicationId, request.getAmount(), request.getInterestRate());
+        emailService.sendEmail(email, subject, body);
 
         // Automatically create loan record
         try {

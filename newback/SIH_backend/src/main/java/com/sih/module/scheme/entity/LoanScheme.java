@@ -65,4 +65,59 @@ public class LoanScheme {
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private OffsetDateTime createdAt = OffsetDateTime.now();
+
+    @Column(name = "min_age")
+    private Integer minAge;
+
+    @Column(name = "max_age")
+    private Integer maxAge;
+
+    @Column(name = "gender_allowed", length = 20)
+    private String genderAllowed;
+
+    @Column(name = "caste_category", length = 50)
+    private String casteCategory;
+
+    @Column(name = "income_max", precision = 15, scale = 2)
+    private BigDecimal incomeMax;
+
+    @Column(name = "max_existing_loans")
+    @Builder.Default
+    private Integer maxExistingLoans = 1;
+
+    @Column(name = "is_subsidy")
+    @Builder.Default
+    private Boolean isSubsidy = false;
+
+    @Column(name = "subsidy_type", length = 20)
+    private String subsidyType;
+
+    @Column(name = "subsidy_percentage", precision = 5, scale = 2)
+    private BigDecimal subsidyPercentage;
+
+    @Column(name = "grace_period_days")
+    @Builder.Default
+    private Integer gracePeriodDays = 0;
+
+    @Column(name = "penalty_rate", precision = 5, scale = 2)
+    private BigDecimal penaltyRate;
+
+    @Column(name = "emi_bounce_charges", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal emiBounceCharges = BigDecimal.ZERO;
+
+    @Column(name = "allow_prepayment")
+    @Builder.Default
+    private Boolean allowPrepayment = true;
+
+    @Column(name = "prepayment_penalty", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal prepaymentPenalty = BigDecimal.ZERO;
+
+    @Column(name = "is_group_loan_allowed")
+    @Builder.Default
+    private Boolean isGroupLoanAllowed = false;
+
+    @Column(name = "created_by", length = 100)
+    private String createdBy;
 }

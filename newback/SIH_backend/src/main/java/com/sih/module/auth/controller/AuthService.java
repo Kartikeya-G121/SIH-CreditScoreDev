@@ -64,6 +64,14 @@ public class AuthService {
             }
         }
 
+        //also check black listed 
+        if (existingUserByEmail.isPresent() && existingUserByEmail.get().getIsBlacklisted()) {
+            throw new BadRequestException("Email is blacklisted");
+        }
+        if (existingUserByPhone.isPresent() && existingUserByPhone.get().getIsBlacklisted()) {
+            throw new BadRequestException("Phone number is blacklisted");
+        }
+
         User user = existingUserByEmail.orElse(existingUserByPhone.orElse(null));
         
         if (user == null) {
@@ -203,9 +211,18 @@ public class AuthService {
                 TimeUnit.MINUTES);
     }
 
-    public void resendOtp(String phoneNumber) {
-        User user = userRepository.findByPhoneNumber(phoneNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    public void resendOtp(String identifier) {
+        // Try to find user by email or phone
+        User user;
+        if (identifier.contains("@")) {
+            // It's an email
+            user = userRepository.findByEmail(identifier)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        } else {
+            // It's a phone number
+            user = userRepository.findByPhoneNumber(identifier)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        }
 
         if (user.getIsActive()) {
             throw new BadRequestException("User is already active");
@@ -214,6 +231,7 @@ public class AuthService {
         // Generate and Send new OTP
         String otp = generateOtp();
         saveOtp(user.getEmail(), otp);
+        saveOtp(user.getPhoneNumber(), otp);
 
         // Send OTP via SMS
         Map<String, Object> smsPayload = new HashMap<>();
@@ -233,7 +251,7 @@ public class AuthService {
                 otp));
         notificationService.sendNotification(user.getUserId(), "EMAIL", "REGISTRATION_OTP", emailPayload);
 
-        log.info("OTP resent to user: {}", phoneNumber);
+        log.info("OTP resent to user: {}", identifier);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -243,10 +261,12 @@ public class AuthService {
 
         if (!user.getIsActive()) {
             throw new BadRequestException("Account is inactive. Please verify OTP.");
+            
         }
 
         if (user.getIsBlacklisted()) {
-            throw new BadRequestException("Account is blacklisted");
+            throw new BadRequestException("Your account has been blocked. Please contact support for assistance.");
+
         }
 
         if (user.getPasswordHash() == null ||

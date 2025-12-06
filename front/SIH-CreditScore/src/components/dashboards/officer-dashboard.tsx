@@ -80,6 +80,11 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import RiskMonitoringCenter from './risk-monitoring-center';
 import { IndiaRepaymentHeatmap } from './india-repayment-heatmap';
+import UserManagement from './admin/user-management';
+import MLModelsManagement from './officer/ml-models-management';
+import ApplicationManagement from './admin/application-management';
+import LoanPortfolioDashboard from './admin/loan-portfolio-dashboard';
+import { TransactionsExplorer } from './admin/transactions-explorer';
 
 type Beneficiary = (typeof MOCK_BENEFICIARIES_LIST)[0];
 
@@ -333,6 +338,22 @@ export default function OfficerDashboard({ activeTab = 'dashboard' }: OfficerDas
   // Render Risk Monitoring Center if that tab is active
   if (activeTab === 'risk-monitoring') {
     return <RiskMonitoringCenter />;
+  }
+
+  if (activeTab === 'user-management') {
+    return <UserManagement />;
+  }
+
+  if (activeTab === 'system-metrics') {
+    return <MLModelsManagement />;
+  }
+
+  if (activeTab === 'application-management') {
+    return <ApplicationManagement />;
+  }
+
+  if (activeTab === 'portfolio') {
+    return <LoanPortfolioDashboard />;
   }
 
   return (
@@ -613,10 +634,15 @@ export default function OfficerDashboard({ activeTab = 'dashboard' }: OfficerDas
               Generate comprehensive policy reports based on current data and
               trends.
             </p>
-            <Button>
-              <Download className="mr-2 h-4 w-4" />
-              Generate Policy Report
-            </Button>
+            <div className="flex gap-2">
+              <Button>
+                <Download className="mr-2 h-4 w-4" />
+                Generate Policy Report
+              </Button>
+              <Button variant="secondary" onClick={() => alert('Test Button Works!')}>
+                Test Button
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

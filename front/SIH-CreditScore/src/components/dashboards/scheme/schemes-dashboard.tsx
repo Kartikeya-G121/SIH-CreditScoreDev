@@ -60,7 +60,7 @@ export function SchemesDashboard() {
             const data = isAdmin
                 ? await schemeService.getAllSchemes()
                 : await schemeService.getActiveSchemes();
-            setSchemes(data.schemes || []);
+            setSchemes(Array.isArray(data) ? data : data.schemes || []);
         } catch (error) {
             console.error('Failed to fetch schemes:', error);
             toast({

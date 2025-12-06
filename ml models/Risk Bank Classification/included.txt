@@ -1,0 +1,20 @@
+Features INCLUDED (18 total): Based on the report showing shape (7, 18), the models were trained on these features:
+
+loan_amount
+tenure_months
+total_emis
+emis_paid
+emis_pending
+on_time_emis
+late_payments
+missed_payments
+average_delay_days
+max_delay_days
+current_outstanding
+subsidy_amount
+family_size
+dependents_count
+bpl_status
+disability_status
+minority_status
+dependency_ratio (engineered feature = family_size / dependents_count)

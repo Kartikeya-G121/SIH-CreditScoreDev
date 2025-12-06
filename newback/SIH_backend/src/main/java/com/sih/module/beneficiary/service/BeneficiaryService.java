@@ -376,34 +376,87 @@ public class BeneficiaryService {
         }
     }
 
-    public byte[] downloadCertificate(Long userId) {
+    public DocumentDownloadDTO downloadCertificate(Long userId) {
         BeneficiaryProfile profile = profileRepository.findByUserUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
 
         if (STORAGE_TYPE_S3.equals(profile.getCertificateStorageType()) && profile.getCasteCertificateUrl() != null) {
-            return supabaseStorageService.downloadFile(profile.getCasteCertificateUrl());
+            byte[] data = supabaseStorageService.downloadFile(profile.getCasteCertificateUrl());
+            String fileName = extractFileNameFromUrl(profile.getCasteCertificateUrl(), "certificate");
+            String contentType = determineContentType(fileName);
+            
+            return DocumentDownloadDTO.builder()
+                    .data(data)
+                    .fileName(fileName)
+                    .contentType(contentType)
+                    .build();
         }
 
         if (profile.getCertificateBlob() != null) {
-            return profile.getCertificateBlob();
+            // Fallback for blob storage - default to PDF if unknown, or maybe generic binary
+            return DocumentDownloadDTO.builder()
+                    .data(profile.getCertificateBlob())
+                    .fileName("certificate.pdf") 
+                    .contentType("application/pdf")
+                    .build();
         }
 
         throw new ResourceNotFoundException("Certificate not found");
     }
 
-    public byte[] downloadIdentityProof(Long userId) {
+    public DocumentDownloadDTO downloadIdentityProof(Long userId) {
         BeneficiaryProfile profile = profileRepository.findByUserUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
 
         if (STORAGE_TYPE_S3.equals(profile.getIdentityStorageType()) && profile.getIdentityProofUrl() != null) {
-            return supabaseStorageService.downloadFile(profile.getIdentityProofUrl());
+            byte[] data = supabaseStorageService.downloadFile(profile.getIdentityProofUrl());
+            String fileName = extractFileNameFromUrl(profile.getIdentityProofUrl(), "identity_proof");
+            String contentType = determineContentType(fileName);
+
+            return DocumentDownloadDTO.builder()
+                    .data(data)
+                    .fileName(fileName)
+                    .contentType(contentType)
+                    .build();
         }
 
         if (profile.getIdentityProofBlob() != null) {
-            return profile.getIdentityProofBlob();
+             return DocumentDownloadDTO.builder()
+                    .data(profile.getIdentityProofBlob())
+                    .fileName("identity_proof.pdf")
+                    .contentType("application/pdf")
+                    .build();
         }
 
         throw new ResourceNotFoundException("Identity proof not found");
+    }
+
+    private String extractFileNameFromUrl(String url, String defaultName) {
+        if (url == null || url.isEmpty()) {
+            return defaultName;
+        }
+        try {
+            // URL format: .../filename.ext or .../uuid_filename.ext
+            int lastSlashIndex = url.lastIndexOf('/');
+            if (lastSlashIndex != -1 && lastSlashIndex < url.length() - 1) {
+                String rawName = url.substring(lastSlashIndex + 1);
+                // Optional: remove UUID prefix if present (assuming UUID_filename format from upload)
+                // Implement if needed, otherwise rawName is fine
+                return rawName;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract filename from URL: {}", url);
+        }
+        return defaultName;
+    }
+
+    private String determineContentType(String fileName) {
+        if (fileName == null) return "application/octet-stream";
+        String lowerName = fileName.toLowerCase();
+        if (lowerName.endsWith(".pdf")) return "application/pdf";
+        if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) return "image/jpeg";
+        if (lowerName.endsWith(".png")) return "image/png";
+        return "application/octet-stream";
     }
 
     private ProfileResponse mapToResponse(BeneficiaryProfile profile) {

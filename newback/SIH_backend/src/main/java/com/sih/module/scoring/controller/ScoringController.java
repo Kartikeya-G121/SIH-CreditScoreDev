@@ -7,6 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Controller for Credit Scoring Operations
+ * Handles loan application assessments and scoring
+ */
 @RestController
 @RequestMapping("/api/v1/scoring")
 @RequiredArgsConstructor
@@ -26,4 +30,3 @@ public class ScoringController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
-

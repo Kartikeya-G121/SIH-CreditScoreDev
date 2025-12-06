@@ -31,7 +31,9 @@ public class AuthController {
 
     @PostMapping("/resend-otp")
     public ResponseEntity<ApiResponse<Object>> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
-        authService.resendOtp(request.getPhoneNumber());
+        // Pass either email or phoneNumber, whichever is provided
+        String identifier = request.getEmail() != null ? request.getEmail() : request.getPhoneNumber();
+        authService.resendOtp(identifier);
         return ResponseEntity.ok(ApiResponse.success("OTP resent successfully to your phone and email."));
     }
 

@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableAsync
 @EnableScheduling
+@EnableCaching
 public class IncomeProcessingSystemApplication {
 
     public static void main(String[] args) {

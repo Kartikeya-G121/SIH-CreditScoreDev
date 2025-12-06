@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
@@ -19,10 +21,12 @@ public class SchemeController {
     private final SchemeService schemeService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER')")
     public ResponseEntity<ApiResponse<SchemeResponse>> createScheme(
             @Valid @RequestBody SchemeRequest request) {
-        SchemeResponse response = schemeService.createScheme(request);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String createdBy = authentication.getName();
+        SchemeResponse response = schemeService.createScheme(request, createdBy);
         return ResponseEntity.ok(ApiResponse.success("Scheme created successfully", response));
     }
 
@@ -48,7 +52,7 @@ public class SchemeController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER')")
     public ResponseEntity<ApiResponse<SchemeResponse>> updateScheme(
             @PathVariable Integer id,
             @Valid @RequestBody SchemeRequest request) {
@@ -56,8 +60,15 @@ public class SchemeController {
         return ResponseEntity.ok(ApiResponse.success("Scheme updated successfully", response));
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER')")
+    public ResponseEntity<ApiResponse<Void>> deleteScheme(@PathVariable Integer id) {
+        schemeService.deleteScheme(id);
+        return ResponseEntity.ok(ApiResponse.success("Scheme deleted successfully", null));
+    }
+
     @PutMapping("/{id}/toggle")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER')")
     public ResponseEntity<ApiResponse<SchemeResponse>> toggleScheme(@PathVariable Integer id) {
         SchemeResponse response = schemeService.toggleScheme(id);
         return ResponseEntity.ok(ApiResponse.success("Scheme toggled", response));

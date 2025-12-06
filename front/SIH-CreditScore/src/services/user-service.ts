@@ -10,7 +10,6 @@ export const userService = {
      * GET /api/v1/users/me
      */
     async getProfile(): Promise<UserProfileResponse> {
-        const response = await fetchFromApi('/users/me');
-        return response.data;
+        return await fetchFromApi('/users/me');
     },
 };

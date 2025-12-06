@@ -16,10 +16,10 @@ export interface ApplicationStatus {
 }
 
 export interface LoanApplicationRequest {
-  loanType: LoanType;
+  requestedAmount: number;
+  purpose?: string;
   groupId?: number;
   schemeId?: number;
-  requestedAmount?: number;
   tenureMonths?: number;
 }
 
@@ -142,4 +142,29 @@ export interface GroupApplicationStatusResponse {
   role: 'LEADER' | 'MEMBER';
   status: 'NOT_APPLIED' | 'DRAFT' | 'SUBMITTED';
   applicationId: number | null;
+  requestedAmount?: number;
 }
+
+// ==================== Admin/Officer Types ====================
+
+export interface ReviewRequest {
+  approved: boolean;
+  comments?: string;
+}
+
+export interface SanctionRequest {
+  amount: number;
+  interestRate: number;
+}
+
+export interface TimelineEvent {
+  status: string;
+  timestamp: string;
+  comments?: string;
+}
+
+export interface TimelineResponse {
+  applicationId: number;
+  events: TimelineEvent[];
+}
+

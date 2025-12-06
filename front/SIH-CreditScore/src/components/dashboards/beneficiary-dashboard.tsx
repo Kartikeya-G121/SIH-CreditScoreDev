@@ -607,11 +607,7 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
               setShowPaymentDialog(true);
             }}
             onViewDetails={(loan) => {
-              // TODO: Open loan details dialog
-              toast({
-                title: 'Loan Details',
-                description: `Viewing details for Loan #${loan.loanId}`,
-              });
+              router.push(`/dashboard/loans/${loan.loanId}`);
             }}
             activeOnly={false}
           />

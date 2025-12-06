@@ -86,17 +86,45 @@ export function SchemeDetailsDialog({ scheme, open, onOpenChange, isAdmin }: Sch
                         <ul className="grid gap-2 text-sm">
                             <li className="flex items-center gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                <span>Indian Citizen aged 18-60 years</span>
+                                <span>Age: {scheme.minAge} - {scheme.maxAge} years</span>
                             </li>
                             <li className="flex items-center gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                <span>Valid Identity and Address Proof</span>
+                                <span>Gender: {scheme.genderAllowed}</span>
                             </li>
                             <li className="flex items-center gap-2">
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                <span>Minimum credit score of 650 (for higher amounts)</span>
+                                <span>Income Limit: ₹{scheme.incomeMax?.toLocaleString()} / year</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                <span>Max Existing Loans: {scheme.maxExistingLoans}</span>
                             </li>
                         </ul>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-3">
+                        <h4 className="font-medium">Terms & Subsidy</h4>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p className="text-muted-foreground">Grace Period</p>
+                                <p className="font-medium">{scheme.gracePeriodDays} Days</p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground">Prepayment</p>
+                                <p className="font-medium">{scheme.allowPrepayment ? 'Allowed' : 'Not Allowed'}</p>
+                            </div>
+                            {scheme.isSubsidy && (
+                                <div className="col-span-2 bg-green-50 p-2 rounded border border-green-100">
+                                    <p className="font-semibold text-green-700">Subsidy Available</p>
+                                    <p className="text-green-600">
+                                        {scheme.subsidyPercentage}% {scheme.subsidyType} Subsidy
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {!scheme.isActive && (

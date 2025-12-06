@@ -18,7 +18,8 @@ import {
 import { Logo } from '@/components/layout/logo';
 import BeneficiaryDashboard from '@/components/dashboards/beneficiary-dashboard';
 import OfficerDashboard from '@/components/dashboards/officer-dashboard';
-import CreditAssessment from '@/components/credit-scoring/credit-assessment';
+import SchemeManagement from '@/components/dashboards/officer/scheme-management';
+
 
 import NotificationsCenter from '@/components/dashboards/notifications-center';
 import ScoreExplainability from '@/components/dashboards/score-explainability';
@@ -38,6 +39,7 @@ import {
   Brain,
   ShieldAlert,
   Landmark,
+  Activity,
 } from 'lucide-react';
 import { UserNav } from '@/components/layout/user-nav';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -100,11 +102,7 @@ function DashboardSidebar() {
         icon: <UploadCloud />,
         label: t('sidebar_bill_upload'),
       },
-      {
-        id: 'credit-score',
-        icon: <BarChart3 />,
-        label: 'UDAAN Score',
-      },
+
       {
         id: 'xai',
         icon: <Brain />,
@@ -144,14 +142,34 @@ function DashboardSidebar() {
         label: t('sidebar_dashboard'),
       },
       {
+        id: 'portfolio',
+        icon: <BarChart3 />,
+        label: 'Loan Portfolio',
+      },
+      {
         id: 'risk-monitoring',
         icon: <ShieldAlert />,
         label: 'Risk Monitoring',
       },
       {
+        id: 'application-management',
+        icon: <FileText />,
+        label: 'Application Management',
+      },
+      {
         id: 'schemes',
         icon: <Landmark />,
         label: 'Loan Schemes',
+      },
+      {
+        id: 'user-management',
+        icon: <Users />,
+        label: 'User Management',
+      },
+      {
+        id: 'system-metrics',
+        icon: <Activity />,
+        label: 'System Metrics',
       },
       {
         id: 'notifications',
@@ -258,9 +276,7 @@ export default function DashboardPage() {
   const renderDashboard = () => {
     switch (user.role) {
       case 'beneficiary':
-        if (tab === 'credit-score') {
-          return <CreditAssessment beneficiaryId={user.id || 'BEN001'} />;
-        }
+
 
         if (tab === 'notifications') {
           return <NotificationsCenter />;
@@ -288,12 +304,14 @@ export default function DashboardPage() {
           );
         }
         return <BeneficiaryDashboard activeTab={tab} />;
+
+
       case 'officer':
         if (tab === 'notifications') {
           return <NotificationsCenter />;
         }
         if (tab === 'schemes') {
-          return <SchemesDashboard />;
+          return <SchemeManagement />;
         }
         return <OfficerDashboard activeTab={tab} />;
       default:

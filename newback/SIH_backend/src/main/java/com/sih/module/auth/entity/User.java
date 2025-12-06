@@ -64,5 +64,8 @@ public class User extends BaseEntity {
     
     @Column(name = "reset_token_expiry")
     private OffsetDateTime resetTokenExpiry;
+
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private com.sih.module.beneficiary.entity.BeneficiaryProfile beneficiaryProfile;
 }
 

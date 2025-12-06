@@ -18,11 +18,10 @@ export const groupService = {
      * POST /api/v1/groups
      */
     async createGroup(data: CreateGroupRequest): Promise<GroupResponse> {
-        const response = await fetchFromApi('/groups', {
+        return await fetchFromApi('/groups', {
             method: 'POST',
             body: JSON.stringify(data),
         });
-        return response.data;
     },
 
     /**
@@ -32,10 +31,10 @@ export const groupService = {
     async getAllGroups(): Promise<GroupListResponse> {
         const response = await fetchFromApi('/groups');
         // Handle both array and object response formats for backward compatibility
-        if (Array.isArray(response.data)) {
-            return { groups: response.data, total: response.data.length };
+        if (Array.isArray(response)) {
+            return { groups: response, total: response.length };
         }
-        return response.data;
+        return response;
     },
 
     /**
@@ -44,10 +43,10 @@ export const groupService = {
      */
     async getMyGroups(): Promise<GroupListResponse> {
         const response = await fetchFromApi('/groups/my-groups');
-        if (Array.isArray(response.data)) {
-            return { groups: response.data, total: response.data.length };
+        if (Array.isArray(response)) {
+            return { groups: response, total: response.length };
         }
-        return response.data;
+        return response;
     },
 
     /**
@@ -55,8 +54,7 @@ export const groupService = {
      * GET /api/v1/groups/{id}
      */
     async getGroupById(id: number): Promise<GroupResponse> {
-        const response = await fetchFromApi(`/groups/${id}`);
-        return response.data;
+        return await fetchFromApi(`/groups/${id}`);
     },
 
     /**
@@ -64,11 +62,10 @@ export const groupService = {
      * PUT /api/v1/groups/{id}
      */
     async updateGroup(id: number, data: UpdateGroupRequest): Promise<GroupResponse> {
-        const response = await fetchFromApi(`/groups/${id}`, {
+        return await fetchFromApi(`/groups/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data),
         });
-        return response.data;
     },
 
     /**
@@ -79,7 +76,7 @@ export const groupService = {
         const response = await fetchFromApi(`/groups/${id}`, {
             method: 'DELETE',
         });
-        return response.data || { success: true, message: 'Group disbanded successfully' };
+        return response || { success: true, message: 'Group disbanded successfully' };
     },
 
     /**
@@ -87,10 +84,9 @@ export const groupService = {
      * POST /api/v1/groups/{id}/join
      */
     async joinGroup(id: number): Promise<MemberResponse> {
-        const response = await fetchFromApi(`/groups/${id}/join`, {
+        return await fetchFromApi(`/groups/${id}/join`, {
             method: 'POST',
         });
-        return response.data;
     },
 
     /**
@@ -101,7 +97,7 @@ export const groupService = {
         const response = await fetchFromApi(`/groups/${id}/leave`, {
             method: 'POST',
         });
-        return response.data || { success: true, message: 'Left group successfully' };
+        return response || { success: true, message: 'Left group successfully' };
     },
 
     /**
@@ -110,10 +106,10 @@ export const groupService = {
      */
     async getGroupMembers(id: number): Promise<MemberListResponse> {
         const response = await fetchFromApi(`/groups/${id}/members`);
-        if (Array.isArray(response.data)) {
-            return { members: response.data, total: response.data.length };
+        if (Array.isArray(response)) {
+            return { members: response, total: response.length };
         }
-        return response.data;
+        return response;
     },
 
     /**
@@ -121,10 +117,9 @@ export const groupService = {
      * PUT /api/v1/groups/{id}/members/{userId}/approve
      */
     async approveMember(groupId: number, userId: number): Promise<MemberResponse> {
-        const response = await fetchFromApi(`/groups/${groupId}/members/${userId}/approve`, {
+        return await fetchFromApi(`/groups/${groupId}/members/${userId}/approve`, {
             method: 'PUT',
         });
-        return response.data;
     },
 
     /**
@@ -132,10 +127,9 @@ export const groupService = {
      * PUT /api/v1/groups/{id}/members/approve-all
      */
     async approveAllMembers(groupId: number): Promise<MemberResponse[]> {
-        const response = await fetchFromApi(`/groups/${groupId}/members/approve-all`, {
+        return await fetchFromApi(`/groups/${groupId}/members/approve-all`, {
             method: 'PUT',
         });
-        return response.data;
     },
 
     /**
@@ -146,6 +140,6 @@ export const groupService = {
         const response = await fetchFromApi(`/groups/${groupId}/members/${userId}`, {
             method: 'DELETE',
         });
-        return response.data || { success: true, message: 'Member removed successfully' };
+        return response || { success: true, message: 'Member removed successfully' };
     },
 };

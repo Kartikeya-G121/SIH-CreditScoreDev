@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Loader2, ArrowLeft, CheckCircle2, FileText, User, MapPin, IndianRupee, Calendar } from 'lucide-react';
 import { loanApplicationService } from '@/services/loan-application-service';
 import { beneficiaryService } from '@/services/beneficiary-service';
@@ -29,6 +30,7 @@ export function ReviewApplicationStep({ applicationId, onBack, onSubmit, isReadO
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [consentGiven, setConsentGiven] = useState(false);
+    const [signature, setSignature] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -126,10 +128,6 @@ export function ReviewApplicationStep({ applicationId, onBack, onSubmit, isReadO
                         <h3>Loan Details</h3>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
-                        <div className="rounded-lg border bg-muted/30 p-4">
-                            <p className="text-sm text-muted-foreground">Requested Amount</p>
-                            <p className="text-lg font-bold text-primary">₹{application.requestedAmount.toLocaleString()}</p>
-                        </div>
                         {scheme && (
                             <>
                                 <div className="rounded-lg border bg-muted/30 p-4">
@@ -137,21 +135,52 @@ export function ReviewApplicationStep({ applicationId, onBack, onSubmit, isReadO
                                     <p className="font-medium">{scheme.schemeName}</p>
                                 </div>
                                 <div className="rounded-lg border bg-muted/30 p-4">
-                                    <p className="text-sm text-muted-foreground">Category</p>
-                                    <p className="font-medium">{scheme.loanCategory}</p>
+                                    <p className="text-sm text-muted-foreground">Provider</p>
+                                    <p className="font-medium">{scheme.providerName}</p>
+                                </div>
+                                <div className="rounded-lg border bg-muted/30 p-4">
+                                    <p className="text-sm text-muted-foreground">Interest Rate</p>
+                                    <p className="font-medium">{scheme.baseInterestRate}% p.a.</p>
+                                </div>
+                                <div className="rounded-lg border bg-muted/30 p-4">
+                                    <p className="text-sm text-muted-foreground">Tenure</p>
+                                    <p className="font-medium">{application.tenureMonths} Months</p>
                                 </div>
                             </>
                         )}
-                        <div className="rounded-lg border bg-muted/30 p-4">
-                            <p className="text-sm text-muted-foreground">Tenure</p>
-                            <p className="font-medium">{application.tenureMonths} Months</p>
-                        </div>
+
                         <div className="rounded-lg border bg-muted/30 p-4 md:col-span-2">
                             <p className="text-sm text-muted-foreground">Purpose</p>
                             <p className="font-medium">{application.purpose}</p>
                         </div>
+
+                        {/* Financial Breakdown */}
+                        <div className="md:col-span-2 rounded-lg border p-4 space-y-3 bg-slate-50">
+                            <h4 className="font-semibold text-sm text-slate-900">Estimated Disbursement Breakdown</h4>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Requested Amount</span>
+                                <span className="font-medium">₹{application.requestedAmount.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-sm items-center">
+                                <span className="text-muted-foreground">Processing Fees</span>
+                                <div className="text-right">
+                                    <span className="font-medium text-green-600">₹0</span>
+                                    <span className="text-xs text-green-600 block bg-green-100 px-2 py-0.5 rounded-full mt-0.5">
+                                        0% Processing Fees
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+                                <span>Net Disbursement Amount</span>
+                                <span className="text-primary">₹{application.requestedAmount.toLocaleString()}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">
+                                * This is an estimate. Final disbursement amount may vary based on verification and approval.
+                            </p>
+                        </div>
+
                         <div className="rounded-lg border bg-muted/30 p-4 md:col-span-2">
-                            <p className="text-sm text-muted-foreground">Status</p>
+                            <p className="text-sm text-muted-foreground">Application Status</p>
                             <p className="font-medium font-bold">{application.status}</p>
                         </div>
                     </div>
@@ -181,7 +210,7 @@ export function ReviewApplicationStep({ applicationId, onBack, onSubmit, isReadO
 
                 {/* Consent Section - Only show if NOT read-only */}
                 {!isReadOnly && (
-                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-6 space-y-4">
+                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-6 space-y-6">
                         <div className="flex items-start space-x-3">
                             <Checkbox
                                 id="consent"
@@ -200,6 +229,27 @@ export function ReviewApplicationStep({ applicationId, onBack, onSubmit, isReadO
                                 </Label>
                             </div>
                         </div>
+
+                        <div className="space-y-2 pt-2 border-t border-blue-200">
+                            <Label htmlFor="signature" className="text-sm font-semibold text-blue-900">
+                                Digital Signature
+                            </Label>
+                            <div className="relative">
+                                <Input
+                                    id="signature"
+                                    placeholder={`Type "${profile.fullName.toUpperCase()}" to sign`}
+                                    value={signature}
+                                    onChange={(e) => setSignature(e.target.value.toUpperCase())}
+                                    className="uppercase font-mono tracking-wide border-blue-200 focus:border-blue-500"
+                                />
+                                {signature && signature === profile.fullName.toUpperCase() && (
+                                    <CheckCircle2 className="absolute right-3 top-2.5 h-5 w-5 text-green-600" />
+                                )}
+                            </div>
+                            <p className="text-xs text-blue-700">
+                                Please type your full name <strong>{profile.fullName.toUpperCase()}</strong> above to digitally sign this application.
+                            </p>
+                        </div>
                     </div>
                 )}
 
@@ -212,7 +262,7 @@ export function ReviewApplicationStep({ applicationId, onBack, onSubmit, isReadO
                     {!isReadOnly && (
                         <Button
                             onClick={handleSubmit}
-                            disabled={!consentGiven || isSubmitting}
+                            disabled={!consentGiven || signature !== profile.fullName.toUpperCase() || isSubmitting}
                             className="bg-green-600 hover:bg-green-700 text-white"
                             size="lg"
                         >

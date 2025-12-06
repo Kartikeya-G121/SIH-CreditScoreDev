@@ -34,6 +34,7 @@ public class ScoringService {
     private final MLModelRepository modelRepository;
     private final LoanApplicationRepository applicationRepository;
     private final BeneficiaryProfileRepository beneficiaryRepository;
+    private final MLModelService mlModelService;
 
     private final FailSafeConfig failSafeConfig;
 
@@ -77,22 +78,43 @@ public class ScoringService {
         BigDecimal creditRiskScore = calculateCreditRiskScore(profile);
 
         // Fail-safe: Use ML model if available and enabled, otherwise use rule-based
-        BigDecimal mlScore = null;
+        BigDecimal mlRiskScore = null;
+        String mlExplanation = null;
+        String mlRiskCategory = null;
+        
         if (model != null) {
             try {
-                // TODO: Call ML model API
-                // mlScore = callMLModel(application, profile);
-                log.debug("ML model available but not yet integrated");
+                // Call ML Risk Classification API
+                Map<String, Object> riskInputData = buildRiskInputData(application, profile);
+                Map<String, Object> mlResult = mlModelService.predictRiskScore(riskInputData);
+                
+                if (mlResult != null) {
+                    mlRiskScore = BigDecimal.valueOf((Double) mlResult.get("risk_score"));
+                    mlRiskCategory = (String) mlResult.get("risk_category");
+                    mlExplanation = (String) mlResult.get("explanation");
+                    log.info("ML Risk Score: {}, Category: {}", mlRiskScore, mlRiskCategory);
+                }
             } catch (Exception e) {
                 log.warn("ML model call failed, using rule-based score: {}", e.getMessage());
             }
         }
 
-        // Composite score (weighted average) - rule-based fallback always works
-        BigDecimal compositeScore = rawIncomeScore.multiply(BigDecimal.valueOf(0.4))
-                .add(adjustedIncomeScore.multiply(BigDecimal.valueOf(0.3)))
-                .add(creditRiskScore.multiply(BigDecimal.valueOf(0.3)))
-                .setScale(2, RoundingMode.HALF_UP);
+        // Composite score (weighted average)
+        // If ML score available, use it with higher weight; otherwise use rule-based
+        BigDecimal compositeScore;
+        if (mlRiskScore != null) {
+            // ML-enhanced scoring: 50% ML, 30% income, 20% rule-based risk
+            compositeScore = mlRiskScore.multiply(BigDecimal.valueOf(0.5))
+                    .add(adjustedIncomeScore.multiply(BigDecimal.valueOf(0.3)))
+                    .add(creditRiskScore.multiply(BigDecimal.valueOf(0.2)))
+                    .setScale(2, RoundingMode.HALF_UP);
+        } else {
+            // Pure rule-based fallback
+            compositeScore = rawIncomeScore.multiply(BigDecimal.valueOf(0.4))
+                    .add(adjustedIncomeScore.multiply(BigDecimal.valueOf(0.3)))
+                    .add(creditRiskScore.multiply(BigDecimal.valueOf(0.3)))
+                    .setScale(2, RoundingMode.HALF_UP);
+        }
 
         // Determine risk band
         String riskBand = determineRiskBand(compositeScore);
@@ -104,12 +126,27 @@ public class ScoringService {
         explainabilityData.put("adjustedIncome", adjustedIncome);
         explainabilityData.put("regionalFactor", regionalParam.getCostAdjustmentFactor());
         explainabilityData.put("literacyScore", profile.getLiteracyScore());
-        explainabilityData.put("scoringMethod", model != null ? "ML" : "RULE_BASED");
+        explainabilityData.put("scoringMethod", mlRiskScore != null ? "ML_ENHANCED" : "RULE_BASED");
+        
+        if (mlRiskScore != null) {
+            explainabilityData.put("mlRiskScore", mlRiskScore);
+            explainabilityData.put("mlRiskCategory", mlRiskCategory);
+            explainabilityData.put("mlExplanation", mlExplanation);
+        }
 
-        String explainabilitySummary = String.format(
-                "Score based on income: %.2f, regional adjustment: %.2f, credit risk: %.2f (Method: %s)",
-                rawIncomeScore, adjustedIncomeScore, creditRiskScore,
-                model != null ? "ML" : "RULE_BASED");
+        String explainabilitySummary;
+        if (mlRiskScore != null) {
+            explainabilitySummary = String.format(
+                    "ML-Enhanced Score: %.2f (ML Risk: %.2f, Income: %.2f, Rule Risk: %.2f). %s",
+                    compositeScore, mlRiskScore, adjustedIncomeScore, creditRiskScore,
+                    mlExplanation != null ? mlExplanation.split("\\n")[0] : ""
+            );
+        } else {
+            explainabilitySummary = String.format(
+                    "Rule-Based Score: %.2f (Income: %.2f, Regional: %.2f, Risk: %.2f)",
+                    compositeScore, rawIncomeScore, adjustedIncomeScore, creditRiskScore
+            );
+        }
 
         CreditAssessment assessment = CreditAssessment.builder()
                 .application(application)
@@ -170,6 +207,37 @@ public class ScoringService {
 
     private String determineEligibility(BigDecimal score) {
         return score.compareTo(BigDecimal.valueOf(50)) >= 0 ? "ELIGIBLE" : "NOT_ELIGIBLE";
+    }
+
+    private Map<String, Object> buildRiskInputData(LoanApplication application, BeneficiaryProfile profile) {
+        Map<String, Object> inputData = new HashMap<>();
+        
+        // Add all available features from application and profile
+        // Note: The ML model will handle missing features
+        
+        // Profile data
+        if (profile.getVerifiedAnnualIncome() != null) {
+            inputData.put("annual_family_income", profile.getVerifiedAnnualIncome().doubleValue());
+        }
+        if (profile.getFamilySize() != null) {
+            inputData.put("family_size", profile.getFamilySize());
+        }
+        if (profile.getDependencyCount() != null) {
+            inputData.put("dependents_count", profile.getDependencyCount());
+        }
+        
+        // Application data
+        if (application.getRequestedAmount() != null) {
+            inputData.put("loan_amount", application.getRequestedAmount().doubleValue());
+        }
+        if (application.getTenureMonths() != null) {
+            inputData.put("tenure_months", application.getTenureMonths());
+        }
+        
+        // Add any other relevant fields that your ML model expects
+        // The ML model's cols_to_drop will filter out what it doesn't need
+        
+        return inputData;
     }
 
     private AssessmentResponse mapToResponse(CreditAssessment assessment) {

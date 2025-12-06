@@ -95,15 +95,15 @@ public class BeneficiaryController {
 
     @GetMapping("/certificate/download")
     public ResponseEntity<byte[]> downloadCertificate(@AuthenticationPrincipal Long userId) {
-        byte[] certificate = beneficiaryService.downloadCertificate(userId);
+        DocumentDownloadDTO downloadDto = beneficiaryService.downloadCertificate(userId);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "certificate.pdf");
+        headers.setContentType(MediaType.parseMediaType(downloadDto.getContentType()));
+        headers.setContentDispositionFormData("attachment", downloadDto.getFileName());
 
         return ResponseEntity.ok()
                 .headers(headers)
-                .body(certificate);
+                .body(downloadDto.getData());
     }
 
     @PostMapping("/upload-identity")
@@ -122,15 +122,15 @@ public class BeneficiaryController {
 
     @GetMapping("/identity/download")
     public ResponseEntity<byte[]> downloadIdentityProof(@AuthenticationPrincipal Long userId) {
-        byte[] identityProof = beneficiaryService.downloadIdentityProof(userId);
+        DocumentDownloadDTO downloadDto = beneficiaryService.downloadIdentityProof(userId);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "identity_proof.pdf");
+        headers.setContentType(MediaType.parseMediaType(downloadDto.getContentType()));
+        headers.setContentDispositionFormData("attachment", downloadDto.getFileName());
 
         return ResponseEntity.ok()
                 .headers(headers)
-                .body(identityProof);
+                .body(downloadDto.getData());
     }
 
     @GetMapping

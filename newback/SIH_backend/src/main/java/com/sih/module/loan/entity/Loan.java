@@ -86,4 +86,44 @@ public class Loan extends BaseEntity {
 
     @Column(name = "next_payment_date")
     private LocalDate nextPaymentDate;
+
+    // --- New Fields for Loan Servicing ---
+
+    @Column(name = "disbursed_amount", precision = 15, scale = 2)
+    private BigDecimal disbursedAmount;
+
+    @Column(name = "disbursement_date")
+    private LocalDate disbursementDate;
+
+    @Column(name = "original_tenure_months")
+    private Integer originalTenureMonths;
+
+    @Column(name = "dpd")
+    @Builder.Default
+    private Integer dpd = 0;
+
+    @Column(name = "risk_bucket", length = 20)
+    @Builder.Default
+    private String riskBucket = "CURRENT"; // CURRENT, SMA_0, SMA_1, SMA_2, NPA
+
+    @Column(name = "penal_interest_rate", precision = 5, scale = 2)
+    @Builder.Default
+    private BigDecimal penalInterestRate = BigDecimal.ONE;
+
+    @Column(name = "outstanding_penalty", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal outstandingPenalty = BigDecimal.ZERO;
+
+    @Column(name = "prepayment_penalty_rate", precision = 5, scale = 2)
+    private BigDecimal prepaymentPenaltyRate;
+
+    @Column(name = "foreclosure_allowed")
+    @Builder.Default
+    private Boolean foreclosureAllowed = true;
+
+    @Column(name = "foreclosure_penalty_rate", precision = 5, scale = 2)
+    private BigDecimal foreclosurePenaltyRate;
+
+    @Column(name = "last_accrual_date")
+    private LocalDate lastAccrualDate;
 }
