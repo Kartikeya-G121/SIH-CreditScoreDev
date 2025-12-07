@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, Users, CheckCircle2, AlertCircle, FileText, Send } from 'lucide-react';
 import { userService } from '@/services/user-service';
+import { beneficiaryService } from '@/services/beneficiary-service';
 import { useToast } from '@/hooks/use-toast';
 import { loanApplicationService } from '@/services/loan-application-service';
 import type { GroupApplicationStatus, GroupMemberApplicationStatus } from '@/types/loan-application-types';
@@ -32,7 +33,7 @@ export function GroupLoanDashboard({ groupId, onDraftApplication, onBack }: Grou
             let userId = currentUserId;
             if (!userId) {
                 try {
-                    const profile = await userService.getProfile();
+                    const profile = await beneficiaryService.getMyProfile();
                     userId = profile.userId;
                     setCurrentUserId(userId);
                 } catch (e) {
@@ -85,11 +86,13 @@ export function GroupLoanDashboard({ groupId, onDraftApplication, onBack }: Grou
     const getStatusBadge = (status: GroupMemberApplicationStatus['status']) => {
         switch (status) {
             case 'SUBMITTED':
-                return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Submitted</Badge>;
+                return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Submitted</Badge>;
             case 'DRAFT':
-                return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Drafted</Badge>;
+                return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200">Drafted</Badge>;
+            case 'REJECTED':
+                return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Rejected</Badge>;
             default:
-                return <Badge variant="secondary">Not Started</Badge>;
+                return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100 border-gray-200">Not Started</Badge>;
         }
     };
 
@@ -150,11 +153,11 @@ export function GroupLoanDashboard({ groupId, onDraftApplication, onBack }: Grou
                                     </TableCell>
                                     <TableCell>
                                         {/* @ts-ignore */}
-                                        <Badge className="border-input bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground border">{member.role}</Badge>
+                                        <Badge className={`border-input bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground border`}>{member.role}</Badge>
                                     </TableCell>
                                     <TableCell>{getStatusBadge(member.status)}</TableCell>
                                     <TableCell className="text-right">
-                                        {member.amount ? `₹${member.amount.toLocaleString()}` : '-'}
+                                        {member.amount ? `₹${member.amount.toLocaleString()}` : '₹0'}
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -168,21 +171,33 @@ export function GroupLoanDashboard({ groupId, onDraftApplication, onBack }: Grou
                 <div className="space-y-1">
                     <h4 className="font-semibold">Your Action</h4>
                     <p className="text-sm text-muted-foreground">
-                        {currentUserMember?.status === 'NOT_STARTED'
+                        {(!currentUserMember || currentUserMember.status === 'NOT_STARTED')
                             ? "You haven't started your application yet."
-                            : currentUserMember?.status === 'DRAFT'
+                            : currentUserMember.status === 'DRAFT'
                                 ? "You have a draft application saved."
-                                : "Your application is ready for submission."}
+                                : currentUserMember.status === 'SUBMITTED'
+                                    ? "Your application has been submitted."
+                                    : currentUserMember.status === 'REJECTED'
+                                        ? "Your application was rejected."
+                                        : "Your application is ready for submission."}
                     </p>
                 </div>
 
                 <div className="flex gap-3">
-                    {currentUserMember?.status !== 'SUBMITTED' && (
-                        <Button onClick={() => onDraftApplication(currentUserMember?.applicationId)}>
-                            <FileText className="mr-2 h-4 w-4" />
-                            {currentUserMember?.status === 'NOT_STARTED' ? 'Draft My Application' : 'Edit Application'}
-                        </Button>
-                    )}
+                    {(() => {
+                        console.log('DEBUG: currentUserId:', currentUserId);
+                        console.log('DEBUG: currentUserMember:', currentUserMember);
+                        console.log('DEBUG: status:', currentUserMember?.status);
+                        return null;
+                    })()}
+                    <Button onClick={() => onDraftApplication(currentUserMember?.applicationId)}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        {(!currentUserMember || currentUserMember.status === 'NOT_STARTED')
+                            ? 'Draft My Application'
+                            : (currentUserMember.status === 'SUBMITTED' || currentUserMember.status === 'REJECTED')
+                                ? 'View Application'
+                                : `Edit Application (${currentUserMember.status})`}
+                    </Button>
 
                     {isLeader && (
                         <Button

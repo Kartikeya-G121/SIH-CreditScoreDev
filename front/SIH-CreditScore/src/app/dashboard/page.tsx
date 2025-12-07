@@ -31,7 +31,6 @@ import {
   Users,
   FileText,
   BarChart3,
-  Settings,
   HelpCircle,
   Lightbulb,
   UploadCloud,
@@ -209,12 +208,7 @@ function DashboardSidebar() {
               <span>{t('sidebar_help')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => handleNav('/settings')}>
-              <Settings />
-              <span>{t('sidebar_settings')}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+
         </SidebarMenu>
         <Separator className="my-2" />
         {user && (

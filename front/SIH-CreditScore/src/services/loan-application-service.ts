@@ -84,8 +84,7 @@ export const loanApplicationService = {
                 role: ms.role,
                 status: (ms.status === 'NOT_APPLIED' ? 'NOT_STARTED' : ms.status) as 'NOT_STARTED' | 'DRAFT' | 'SUBMITTED',
                 applicationId: ms.applicationId || undefined,
-                // We don't get amount in status response, but we could fetch it if needed.
-                // For the dashboard list, status is most important.
+                amount: ms.requestedAmount
             }));
 
             // 4. Check if can submit (Leader only, all members must be DRAFT)

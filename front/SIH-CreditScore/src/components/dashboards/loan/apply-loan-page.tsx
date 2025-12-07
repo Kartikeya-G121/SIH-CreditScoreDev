@@ -158,9 +158,12 @@ export function ApplyLoanPage({ preSelectedSchemeId, groupId, applicationId }: A
             setIsLoadingApplication(true);
             const application = await loanApplicationService.getApplicationById(appId);
 
+            const isReadOnly = application.status !== 'DRAFT';
+            setIsReadOnlyMode(isReadOnly);
+
             setWorkflowState(prev => ({
                 ...prev,
-                currentStep: application.status !== 'DRAFT' ? 4 : 1,
+                currentStep: isReadOnly ? 4 : 1,
                 applicationId: application.applicationId,
                 formData: {
                     schemeId: application.schemeId || 0,

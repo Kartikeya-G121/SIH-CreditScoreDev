@@ -25,8 +25,8 @@ import {
 } from '@/components/ui/carousel';
 import { Logo } from '@/components/layout/logo';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import heroImage from '@/lib/rupixen-Q59HmzK38eQ-unsplash.jpg';
 import { useLanguage } from '@/contexts/language-context';
+import Autoplay from 'embla-carousel-autoplay';
 
 function LandingHeader() {
   const { t } = useLanguage();
@@ -70,9 +70,32 @@ function LandingHeader() {
 
 export default function Home() {
   const { t } = useLanguage();
-  const partners = PlaceHolderImages.filter((img) =>
+  /* const partners = PlaceHolderImages.filter((img) =>
     img.id.startsWith('partner-')
-  );
+  ); */
+
+  const partners = [
+    {
+      imageUrl: "/images/partners/partner-1.png",
+      description: "Partner Institution 1",
+      imageHint: "trusted bank partner"
+    },
+    {
+      imageUrl: "/images/partners/partner-2.png",
+      description: "Partner Institution 2",
+      imageHint: "financial organization"
+    },
+    {
+      imageUrl: "/images/partners/partner-3.png",
+      description: "Partner Institution 3",
+      imageHint: "lending partner"
+    },
+    {
+      imageUrl: "/images/partners/partner-4.png",
+      description: "Partner Institution 4",
+      imageHint: "strategic collaborator"
+    }
+  ];
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
@@ -98,13 +121,12 @@ export default function Home() {
             </div>
             <div className="relative">
               <Image
-                src={heroImage}
-                alt="Smiling woman looking at a phone"
+                src="/images/image.png"
+                alt="Credit Score Dashboard"
                 width={600}
                 height={400}
                 className="mx-auto overflow-hidden rounded-xl object-cover"
                 data-ai-hint="financial empowerment"
-                placeholder="blur"
               />
             </div>
           </div>
@@ -178,6 +200,7 @@ export default function Home() {
               </p>
             </div>
             <Carousel
+              plugins={[Autoplay({ delay: 2000 })]}
               opts={{
                 align: 'start',
                 loop: true,

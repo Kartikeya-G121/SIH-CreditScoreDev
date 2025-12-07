@@ -17,7 +17,7 @@ import {
   DropdownMenuPortal,
   DropdownMenuSubContent
 } from '@/components/ui/dropdown-menu';
-import { CreditCard, LogOut, Settings, User as UserIcon, Users } from 'lucide-react';
+import { LogOut, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function UserNav() {
@@ -31,8 +31,8 @@ export function UserNav() {
 
   const handleNavigation = (path: string) => {
     if (path.startsWith('/')) {
-       toast({ title: `Navigating to ${path}`});
-       // In a real app, you would use: router.push(path);
+      toast({ title: `Navigating to ${path}` });
+      // In a real app, you would use: router.push(path);
     } else {
       router.push(`/dashboard?tab=${path}`);
     }
@@ -63,32 +63,9 @@ export function UserNav() {
             <UserIcon className="mr-2" />
             <span>Profile</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => handleNavigation('/billing')}>
-            <CreditCard className="mr-2" />
-            <span>Billing</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => handleNavigation('/settings')}>
-            <Settings className="mr-2" />
-            <span>Settings</span>
-          </DropdownMenuItem>
+
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Users className="mr-2" />
-            <span>Switch User</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent>
-              {users.map((u) => (
-                <DropdownMenuItem key={u.id} onSelect={() => switchUser(u.id)}>
-                  <span>{u.name} ({u.role})</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
-        <DropdownMenuSeparator />
+
         <DropdownMenuItem onClick={logout}>
           <LogOut className="mr-2" />
           <span>Log out</span>

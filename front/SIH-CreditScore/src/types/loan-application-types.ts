@@ -123,7 +123,7 @@ export interface GroupMemberApplicationStatus {
   userId: number;
   userName: string;
   role: 'LEADER' | 'MEMBER';
-  status: 'NOT_STARTED' | 'DRAFT' | 'SUBMITTED';
+  status: 'NOT_STARTED' | 'DRAFT' | 'SUBMITTED' | 'REJECTED';
   amount?: number;
   applicationId?: number;
 }
@@ -140,7 +140,7 @@ export interface GroupApplicationStatusResponse {
   userId: number;
   userName: string;
   role: 'LEADER' | 'MEMBER';
-  status: 'NOT_APPLIED' | 'DRAFT' | 'SUBMITTED';
+  status: 'NOT_APPLIED' | 'DRAFT' | 'SUBMITTED' | 'REJECTED';
   applicationId: number | null;
   requestedAmount?: number;
 }
