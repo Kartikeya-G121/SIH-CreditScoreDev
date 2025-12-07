@@ -497,7 +497,13 @@ public class LoanService {
                 .startDate(loan.getStartDate())
                 .endDate(loan.getEndDate())
                 .loanStatus(loan.getLoanStatus())
-                .nextPaymentDate(loan.getNextPaymentDate())
+                .loanStatus(loan.getLoanStatus())
+                .nextPaymentDate(
+                    repaymentRepository.findFirstByLoanLoanIdAndStatusInOrderByDueDateAsc(
+                        loan.getLoanId(), 
+                        java.util.Arrays.asList("PENDING", "DUE", "OVERDUE") // Consider OVERDUE as next logic if user hasn't paid
+                    ).map(Repayment::getDueDate).orElse(loan.getNextPaymentDate())
+                )
                 .createdAt(loan.getCreatedAt())
                 .updatedAt(loan.getUpdatedAt())
                 .isGroupLoan(loan.getIsGroupLoan())

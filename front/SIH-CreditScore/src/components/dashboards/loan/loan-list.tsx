@@ -27,7 +27,7 @@ interface LoanListProps {
 
 export function LoanList({ onPayNow, onViewDetails, activeOnly = false }: LoanListProps) {
     const { loans, loading, refetch, error } = useLoans(activeOnly);
-    const [filterStatus, setFilterStatus] = useState<string>('ALL');
+    const [filterStatus, setFilterStatus] = useState<string>('ACTIVE');
     const [filterType, setFilterType] = useState<string>('ALL');
 
     const filteredLoans = useMemo(() => {
@@ -126,7 +126,7 @@ export function LoanList({ onPayNow, onViewDetails, activeOnly = false }: LoanLi
             {/* Loan Cards Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredLoans.map((loan) => {
-                    const isOverdue = loan.loanStatus === 'OVERDUE' || (loan.dpd && loan.dpd > 0);
+                    const isOverdue = loan.loanStatus === 'OVERDUE' || ((loan.dpd || 0) > 0);
                     const isNPA = ['SMA_1', 'SMA_2', 'NPA'].includes(loan.riskBucket);
 
                     return (
@@ -144,11 +144,6 @@ export function LoanList({ onPayNow, onViewDetails, activeOnly = false }: LoanLi
                                             </p>
                                             {isOverdue && (
                                                 <Badge variant="destructive" className="h-5 px-1.5 text-[10px] animate-pulse">Overdue</Badge>
-                                            )}
-                                            {loan.riskBucket && loan.riskBucket !== 'CURRENT' && (
-                                                <Badge variant="outline" className="h-5 px-1.5 text-[10px] border-yellow-500 text-yellow-700 bg-yellow-50">
-                                                    {loan.riskBucket.replace('_', ' ')}
-                                                </Badge>
                                             )}
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2">

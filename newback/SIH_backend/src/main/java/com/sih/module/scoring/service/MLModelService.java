@@ -28,7 +28,7 @@ public class MLModelService {
     @Value("${ml.risk.api.url:http://localhost:5001}")
     private String riskApiUrl;
 
-    @Value("${ml.income.api.url:http://localhost:5000}")
+    @Value("${ml.income.api.url:http://localhost:5002}")
     private String incomeApiUrl;
 
     @Value("${ml.risk.model.version:v1}")

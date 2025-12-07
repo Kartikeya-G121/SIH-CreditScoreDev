@@ -9,5 +9,7 @@ import java.util.List;
 @Repository
 public interface RepaymentRepository extends JpaRepository<Repayment, Long> {
     List<Repayment> findByLoanLoanId(Long loanId);
+    
+    java.util.Optional<Repayment> findFirstByLoanLoanIdAndStatusInOrderByDueDateAsc(Long loanId, List<String> statuses);
 }
 
