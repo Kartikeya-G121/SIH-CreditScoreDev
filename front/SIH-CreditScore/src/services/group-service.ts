@@ -38,11 +38,23 @@ export const groupService = {
     },
 
     /**
+     * Search groups
+     * GET /api/v1/groups/search?query=...
+     */
+    async searchGroups(query: string): Promise<GroupListResponse> {
+        const response = await fetchFromApi(`/groups/search?query=${encodeURIComponent(query)}`);
+        if (Array.isArray(response)) {
+            return { groups: response, total: response.length };
+        }
+        return response;
+    },
+
+    /**
      * List my groups
      * GET /api/v1/groups/my-groups
      */
     async getMyGroups(): Promise<GroupListResponse> {
-        const response = await fetchFromApi('/groups/my-groups');
+        const response = await fetchFromApi(`/groups/my-groups`);
         if (Array.isArray(response)) {
             return { groups: response, total: response.length };
         }

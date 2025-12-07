@@ -1,0 +1,44 @@
+Risk Score: 21.72 (Low)
+==================================================
+DETAILED RISK ANALYSIS (Sorted by Importance)
+==================================================
+
+• Current outstanding: DECREASES risk (Impact: 93.87)
+  - Managed outstanding amount (3373) stabilizes risk.
+
+• Bpl status: DECREASES risk (Impact: 83.93)
+
+• Subsidy amount: DECREASES risk (Impact: 77.70)
+
+• On time emis: DECREASES risk (Impact: 64.98)
+
+• Missed payments: DECREASES risk (Impact: 42.00)
+
+• Tenure months: DECREASES risk (Impact: 35.01)
+
+• Emis pending: DECREASES risk (Impact: 34.03)
+
+• Loan amount: DECREASES risk (Impact: 28.68)
+
+• Total emis: DECREASES risk (Impact: 22.50)
+
+• Average delay days: DECREASES risk (Impact: 19.00)
+  - Minimal delays observed.
+
+• Max delay days: DECREASES risk (Impact: 6.14)
+  - Minimal delays observed.
+
+• Emis paid: DECREASES risk (Impact: 5.46)
+
+• Rural urban: INCREASES risk (Impact: 4.77)
+
+• Late payments: DECREASES risk (Impact: 4.06)
+
+• Emi amount: INCREASES risk (Impact: 3.59)
+
+• Family size: DECREASES risk (Impact: 0.53)
+
+• Dependents count: INCREASES risk (Impact: 0.09)
+
+• Dependency ratio: DECREASES risk (Impact: 0.02)
+

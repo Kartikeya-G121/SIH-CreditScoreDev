@@ -16,8 +16,11 @@ export function GroupDashboard() {
     const { t } = useLanguage();
     const { toast } = useToast();
     const [myGroups, setMyGroups] = useState<GroupResponse[]>([]);
-    const [allGroups, setAllGroups] = useState<GroupResponse[]>([]);
+    const [searchResults, setSearchResults] = useState<GroupResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [hasSearched, setHasSearched] = useState(false);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<GroupResponse | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -31,18 +34,29 @@ export function GroupDashboard() {
         }
     };
 
-    const fetchAllGroups = async () => {
+    const handleSearch = async () => {
+        if (!searchQuery.trim()) return;
+
+        setIsSearching(true);
+        setHasSearched(true);
         try {
-            const data = await groupService.getAllGroups();
-            setAllGroups(data.groups || []);
+            const data = await groupService.searchGroups(searchQuery);
+            setSearchResults(data.groups || []);
         } catch (error) {
-            console.error('Failed to fetch all groups:', error);
+            console.error('Failed to search groups:', error);
+            toast({
+                title: 'Search Failed',
+                description: 'Could not search groups. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSearching(false);
         }
     };
 
     const refreshData = async () => {
         setIsLoading(true);
-        await Promise.all([fetchMyGroups(), fetchAllGroups()]);
+        await fetchMyGroups();
         setIsLoading(false);
     };
 
@@ -73,7 +87,7 @@ export function GroupDashboard() {
             <Tabs defaultValue="my-groups" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="my-groups">My Groups</TabsTrigger>
-                    <TabsTrigger value="browse">Browse Groups</TabsTrigger>
+                    <TabsTrigger value="search">Search Groups</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="my-groups" className="space-y-4">
@@ -100,16 +114,43 @@ export function GroupDashboard() {
                     )}
                 </TabsContent>
 
-                <TabsContent value="browse" className="space-y-4">
-                    {isLoading ? (
+                <TabsContent value="search" className="space-y-4">
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <input
+                                type="text"
+                                placeholder="Search by Group Name or Leader Name..."
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            />
+                        </div>
+                        <Button onClick={handleSearch} disabled={isSearching || !searchQuery.trim()}>
+                            {isSearching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Search
+                        </Button>
+                    </div>
+
+                    {isSearching ? (
                         <div className="flex justify-center py-8">
                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
-                    ) : allGroups.length > 0 ? (
-                        <GroupList groups={allGroups} onRefresh={refreshData} onViewDetails={handleViewDetails} />
-                    ) : (
+                    ) : searchResults.length > 0 ? (
+                        <GroupList groups={searchResults} onRefresh={refreshData} onViewDetails={handleViewDetails} />
+                    ) : hasSearched ? (
                         <div className="text-center py-8 text-muted-foreground">
-                            No groups available to join.
+                            No groups found matching "{searchQuery}".
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 border rounded-lg border-dashed bg-muted/20">
+                            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Users className="h-8 w-8 text-muted-foreground/50" />
+                            </div>
+                            <h3 className="text-lg font-medium text-foreground">Find a Lending Group</h3>
+                            <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                                Search for groups by their name or the leader's name to request membership.
+                            </p>
                         </div>
                     )}
                 </TabsContent>

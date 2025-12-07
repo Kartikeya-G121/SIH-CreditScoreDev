@@ -3,6 +3,8 @@ import numpy as np
 import xgboost as xgb
 import joblib
 import shap
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import MinMaxScaler
 from flask import Flask, request, jsonify
 import os
 import warnings
@@ -183,53 +185,80 @@ def predict_risk():
             ensemble_preds = [model.predict(sample)[0] for model in models]
             ensemble_pred = float(np.mean(ensemble_preds))
             
-            # Generate explanations
-            shap_values_list = []
-            xgb_importance_list = []
+            # --- KMEANS CONSENSUS LOGIC ---
             
+            # 1. Collect all explanation vectors
+            explanation_vectors = []
+            
+            # Collect SHAP (Signed)
             for i, model in enumerate(models):
-                shap_values = explainers[i].shap_values(sample)
-                shap_values_list.append(shap_values[0])
-                xgb_importance_list.append(model.feature_importances_)
+                shap_values = explainers[i].shap_values(sample)[0]
+                # Normalize SHAP: signed / max(abs) -> [-1, 1] (approx)
+                # We want to preserve sign for direction, but scale it relative to its own magnitude
+                max_abs_shap = np.max(np.abs(shap_values)) + 1e-9
+                shap_norm = shap_values / max_abs_shap
+                explanation_vectors.append(shap_norm)
+                
+            # Collect XGBoost (Unsigned Importance)
+            for i, model in enumerate(models):
+                xgb_imp = model.feature_importances_
+                # Normalize XGB: val / max -> [0, 1]
+                max_xgb = np.max(xgb_imp) + 1e-9
+                xgb_norm = xgb_imp / max_xgb
+                explanation_vectors.append(xgb_norm)
             
-            # Average explanations
-            avg_shap = np.mean(shap_values_list, axis=0)
-            avg_xgb = np.mean(xgb_importance_list, axis=0)
+            explanation_vectors = np.array(explanation_vectors) # Shape: (2*M, n_features)
             
-            # Normalize scores
-            shap_abs = np.abs(avg_shap)
-            shap_min, shap_max = shap_abs.min(), shap_abs.max()
-            shap_norm = (shap_abs - shap_min) / (shap_max - shap_min + 1e-9)
+            # 2. Apply KMeans Clustering
+            # We have 2*M vectors (e.g., 10). Cluster into 2 groups.
+            n_clusters = 2
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+            cluster_labels = kmeans.fit_predict(explanation_vectors)
             
-            xgb_min, xgb_max = avg_xgb.min(), avg_xgb.max()
-            xgb_norm = (avg_xgb - xgb_min) / (xgb_max - xgb_min + 1e-9)
+            # 3. Select Majority Cluster
+            counts = np.bincount(cluster_labels)
+            majority_cluster_idx = np.argmax(counts)
             
-            # Combined score
-            combined_score = (shap_norm + xgb_norm) / 2.0
+            # 4. Calculate Final Contribution (Mean of Majority Cluster)
+            majority_vectors = explanation_vectors[cluster_labels == majority_cluster_idx]
+            final_contribution = np.mean(majority_vectors, axis=0) # Shape: (n_features,)
             
-            # Create contribution list
+            # 5. Create Result List
             contributions = []
             for i, feat in enumerate(feature_names):
-                signed_score = combined_score[i] if avg_shap[i] >= 0 else -combined_score[i]
+                score = final_contribution[i]
+                
+                # Safe value extraction
+                orig_val = df_input.iloc[idx].get(feat, sample.iloc[0, i])
+                if hasattr(orig_val, 'item'):
+                    orig_val = orig_val.item()
+                    
                 contributions.append({
                     'feature': feat,
                     'value': float(sample.iloc[0, i]),
-                    'original_value': df_input.iloc[idx].get(feat, sample.iloc[0, i]),
-                    'score': float(signed_score),
-                    'shap': float(avg_shap[i]),
-                    'xgb': float(avg_xgb[i])
+                    'original_value': orig_val,
+                    'score': float(score), # Sign determines direction, Magnitude determines importance
+                    'abs_score': abs(float(score))
                 })
             
-            contributions.sort(key=lambda x: abs(x['score']), reverse=True)
+            # Sort by absolute importance
+            contributions.sort(key=lambda x: x['abs_score'], reverse=True)
             
-            # Generate explanation
+            # Generate explanation for ALL features
             explanation_text = generate_explanation(ensemble_pred, contributions)
+            
+            # Write to explanations.txt (Overwrite for latest prediction)
+            try:
+                with open('explanations.txt', 'w') as f:
+                    f.write(explanation_text)
+            except Exception as ex:
+                print(f"Error writing to explanations.txt: {ex}")
             
             results.append({
                 'risk_score': ensemble_pred,
                 'risk_category': get_risk_category(ensemble_pred),
                 'explanation': explanation_text,
-                'top_factors': contributions[:10],
+                'top_factors': contributions[:10], # Keep top 10 for API response structure
                 'model_version': use_version,
                 'num_features': len(feature_names)
             })
@@ -248,36 +277,46 @@ def get_risk_category(score):
 
 def generate_explanation(score, contributions):
     explanation = f"Risk Score: {score:.2f} ({get_risk_category(score)})\n"
+    explanation += "=" * 50 + "\n"
+    explanation += "DETAILED RISK ANALYSIS (Sorted by Importance)\n"
+    explanation += "=" * 50 + "\n\n"
     
-    top_positive = [c for c in contributions if c['score'] > 0][:3]
-    top_negative = [c for c in contributions if c['score'] < 0][:3]
-    
-    if top_positive:
-        explanation += "\nRISK INCREASING FACTORS:\n"
-        for item in top_positive:
-            feat = item['feature']
-            points = abs(item['score']) * 10
+    for item in contributions:
+        feat = item['feature']
+        score_val = item['score']
+        points = abs(score_val) * 100 # Scale up for readability (arbitrary unit)
+        
+        # Determine direction based on sign of consensus score
+        if score_val > 0:
+            direction = "INCREASES"
+        else:
+            direction = "DECREASES"
             
-            if 'outstanding' in feat.lower():
-                explanation += f"• High outstanding amount adds ~{points:.1f} risk points\n"
-            elif 'delay' in feat.lower():
-                explanation += f"• Payment delays add ~{points:.1f} risk points\n"
-            elif 'late' in feat.lower() or 'missed' in feat.lower():
-                explanation += f"• Late/missed payments add ~{points:.1f} risk points\n"
+        # Clean feature name for display
+        feat_display = feat.replace('_', ' ').capitalize()
+        
+        explanation += f"• {feat_display}: {direction} risk (Impact: {points:.2f})\n"
+        
+        # Add context based on feature name (Simple rules)
+        val = item['original_value']
+        if 'outstanding' in feat.lower():
+            if score_val > 0:
+                explanation += f"  - High outstanding amount ({val}) is a risk factor.\n"
             else:
-                explanation += f"• {feat} adds ~{points:.1f} risk points\n"
-    
-    if top_negative:
-        explanation += "\nRISK DECREASING FACTORS:\n"
-        for item in top_negative:
-            feat = item['feature']
-            points = abs(item['score']) * 10
+                explanation += f"  - Managed outstanding amount ({val}) stabilizes risk.\n"
+        elif 'delay' in feat.lower() or 'overdue' in feat.lower():
+            if score_val > 0:
+                explanation += f"  - Payment inconsistencies detected.\n"
+            else:
+                explanation += f"  - Minimal delays observed.\n"
+        elif 'income' in feat.lower():
+            if score_val < 0: # Risk decreasing
+                explanation += f"  - Income level ({val}) supports repayment capacity.\n"
+            else:
+                explanation += f"  - Income level relative to obligations is a concern.\n"
+        
+        explanation += "\n"
             
-            if 'paid' in feat.lower() or 'on_time' in feat.lower():
-                explanation += f"• Consistent on-time payments reduce risk by ~{points:.1f} points\n"
-            else:
-                explanation += f"• {feat} reduces risk by ~{points:.1f} points\n"
-    
     return explanation
 
 if __name__ == '__main__':

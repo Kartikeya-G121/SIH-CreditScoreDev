@@ -12,6 +12,7 @@ import java.util.Optional;
 @Repository
 public interface BeneficiaryProfileRepository extends JpaRepository<BeneficiaryProfile, Long> {
     Optional<BeneficiaryProfile> findByUserUserId(Long userId);
+    List<BeneficiaryProfile> findByUserUserIdIn(List<Long> userIds);
     List<BeneficiaryProfile> findByState(String state);
     List<BeneficiaryProfile> findByStateAndDistrict(String state, String district);
     List<BeneficiaryProfile> findByIsProfileVerified(Boolean isVerified);

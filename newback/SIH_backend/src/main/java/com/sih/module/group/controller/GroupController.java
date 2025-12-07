@@ -39,6 +39,12 @@ public class GroupController {
         return ResponseEntity.ok(ApiResponse.success(groups));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<GroupResponse>>> searchGroups(@RequestParam String query) {
+        List<GroupResponse> groups = groupService.searchGroups(query);
+        return ResponseEntity.ok(ApiResponse.success(groups));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<GroupResponse>> getGroupById(@PathVariable Long id) {
         GroupResponse response = groupService.getGroupById(id);

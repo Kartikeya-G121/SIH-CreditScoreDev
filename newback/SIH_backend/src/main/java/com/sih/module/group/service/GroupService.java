@@ -18,7 +18,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collections;
 
 @Slf4j
 @Service
@@ -64,15 +68,27 @@ public class GroupService {
     }
 
     public List<GroupResponse> getAllGroups() {
-        return groupRepository.findByIsActive(true).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+        List<BorrowerGroup> groups = groupRepository.findByIsActive(true);
+        if (groups.isEmpty()) return Collections.emptyList();
+        
+        return mapToResponsesBulk(groups);
     }
 
     public List<GroupResponse> getMyGroups(Long userId) {
-        return memberRepository.findByUserUserId(userId).stream()
-                .map(member -> mapToResponse(member.getGroup()))
+        List<GroupMember> memberships = memberRepository.findByUserUserId(userId);
+        if (memberships.isEmpty()) return Collections.emptyList();
+        
+        List<BorrowerGroup> groups = memberships.stream()
+                .map(GroupMember::getGroup)
                 .collect(Collectors.toList());
+                
+        return mapToResponsesBulk(groups);
+    }
+
+    public List<GroupResponse> searchGroups(String query) {
+        List<BorrowerGroup> groups = groupRepository.searchGroups(query);
+        if (groups.isEmpty()) return Collections.emptyList();
+        return mapToResponsesBulk(groups);
     }
 
     public GroupResponse getGroupById(Long groupId) {
@@ -317,38 +333,93 @@ public class GroupService {
         return getGroupMembers(groupId);
     }
 
-    private GroupResponse mapToResponse(BorrowerGroup group) {
-        List<GroupMember> members = memberRepository.findByGroupGroupId(group.getGroupId());
+    private List<GroupResponse> mapToResponsesBulk(List<BorrowerGroup> groups) {
+        // 1. Collect all Group IDs
+        List<Long> groupIds = groups.stream().map(BorrowerGroup::getGroupId).collect(Collectors.toList());
+        
+        // 2. Fetch all members for these groups
+        // Assuming memberRepository can fetch by Group In List, if not we iterate (still better than 1 by 1)
+        // Or better: Fetch all members where group ID is in the list
+        List<GroupMember> allMembers = memberRepository.findAll().stream()
+                .filter(m -> groupIds.contains(m.getGroup().getGroupId()))
+                .collect(Collectors.toList());
+        // ideally: memberRepository.findByGroupGroupIdIn(groupIds); but sticking to standard JPA logic for now or simple stream if list small. 
+        // For distinct query:
+        // Set<Long> groupIdsSet = new HashSet<>(groupIds);
+        
+        // 3. User Names Map
+        Set<Long> userIds = allMembers.stream()
+                .map(m -> m.getUser().getUserId())
+                .collect(Collectors.toSet());
+        // Add creators if not in members (though they should be leaders)
+        groups.forEach(g -> {
+            if(g.getCreatedBy() != null) userIds.add(g.getCreatedBy().getUserId());
+        });
+        
+        Map<Long, String> userNames = beneficiaryProfileRepository.findByUserUserIdIn(new ArrayList<>(userIds))
+                .stream()
+                .collect(Collectors.toMap(
+                        p -> p.getUser().getUserId(), 
+                        p -> p.getFullName(),
+                        (existing, replacement) -> existing // duplicates handling
+                ));
 
-        return GroupResponse.builder()
-                .groupId(group.getGroupId())
-                .groupName(group.getGroupName())
-                .formationDate(group.getFormationDate())
-                .projectDescription(group.getProjectDescription())
-                .createdByUserId(group.getCreatedBy() != null ? group.getCreatedBy().getUserId() : null)
-                .leaderName(
-                        group.getCreatedBy() != null
-                                ? beneficiaryProfileRepository.findByUserUserId(group.getCreatedBy().getUserId())
-                                        .map(p -> p.getFullName())
-                                        .orElse("Unknown User")
-                                : "Unknown")
-                .groupScore(group.getGroupScore())
-                .isActive(group.getIsActive())
-                .memberCount(members.size())
-                .maxMembers(MAX_GROUP_MEMBERS)
-                .members(members.stream().map(this::mapMemberToResponse).collect(Collectors.toList()))
-                .createdAt(group.getCreatedAt())
-                .updatedAt(group.getUpdatedAt())
-                .build();
+        // 4. Map
+        return groups.stream().map(group -> {
+            List<GroupMember> groupMembers = allMembers.stream()
+                    .filter(m -> m.getGroup().getGroupId().equals(group.getGroupId()))
+                    .collect(Collectors.toList());
+            
+            String leaderName = "Unknown";
+            if (group.getCreatedBy() != null) {
+                leaderName = userNames.getOrDefault(group.getCreatedBy().getUserId(), "Unknown User");
+            }
+
+            return GroupResponse.builder()
+                    .groupId(group.getGroupId())
+                    .groupName(group.getGroupName())
+                    .formationDate(group.getFormationDate())
+                    .projectDescription(group.getProjectDescription())
+                    .createdByUserId(group.getCreatedBy() != null ? group.getCreatedBy().getUserId() : null)
+                    .leaderName(leaderName)
+                    .groupScore(group.getGroupScore())
+                    .isActive(group.getIsActive())
+                    .memberCount(groupMembers.size())
+                    .maxMembers(MAX_GROUP_MEMBERS)
+                    .members(groupMembers.stream()
+                            .map(m -> mapMemberToResponseWithMap(m, userNames))
+                            .collect(Collectors.toList()))
+                    .createdAt(group.getCreatedAt())
+                    .updatedAt(group.getUpdatedAt())
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
+    private GroupResponse mapToResponse(BorrowerGroup group) {
+        // Fallback for single item fetch (still used by create/update which returns single)
+        // Ideally refactor this too, but for single item N+1 is negligible (1+1+Members)
+        // We can optimize single fetch as well using same logic
+        return mapToResponsesBulk(Collections.singletonList(group)).get(0);
     }
 
     private MemberResponse mapMemberToResponse(GroupMember member) {
+         // Fallback
+         String userName = beneficiaryProfileRepository.findByUserUserId(member.getUser().getUserId())
+                        .map(p -> p.getFullName())
+                        .orElse("Unknown User");
+         return buildMemberResponse(member, userName);
+    }
+    
+    private MemberResponse mapMemberToResponseWithMap(GroupMember member, Map<Long, String> userNames) {
+        String userName = userNames.getOrDefault(member.getUser().getUserId(), "Unknown User");
+        return buildMemberResponse(member, userName);
+    }
+
+    private MemberResponse buildMemberResponse(GroupMember member, String userName) {
         return MemberResponse.builder()
                 .memberId(member.getMemberId())
                 .userId(member.getUser().getUserId())
-                .userName(beneficiaryProfileRepository.findByUserUserId(member.getUser().getUserId())
-                        .map(p -> p.getFullName())
-                        .orElse("Unknown User"))
+                .userName(userName)
                 .email(member.getUser().getEmail())
                 .phoneNumber(member.getUser().getPhoneNumber())
                 .role(member.getRole())
