@@ -15,6 +15,7 @@ class Config:
     # OCR
     TESSERACT_CMD = os.getenv('TESSERACT_CMD', 'tesseract')
     OCR_LANGUAGE = os.getenv('OCR_LANGUAGE', 'eng')
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
     OCR_CONFIDENCE_THRESHOLD = float(os.getenv('OCR_CONFIDENCE_THRESHOLD', 0.6))
     
     # Supabase / S3
@@ -36,3 +37,6 @@ class Config:
     
     # Max file size (10MB)
     MAX_FILE_SIZE = 10 * 1024 * 1024
+    
+    # HTTP timeout for file downloads (in seconds)
+    HTTP_TIMEOUT = int(os.getenv('HTTP_TIMEOUT', 120))
