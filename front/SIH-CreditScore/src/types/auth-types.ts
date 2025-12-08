@@ -5,6 +5,7 @@ export enum UserRole {
     BENEFICIARY = 'BENEFICIARY',
     OFFICER = 'OFFICER',
     ADMIN = 'ADMIN',
+    PARTNER = 'PARTNER',
 }
 
 // ============= Auth Request/Response Types =============

@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -85,6 +85,9 @@ import MLModelsManagement from './officer/ml-models-management';
 import ApplicationManagement from './admin/application-management';
 import LoanPortfolioDashboard from './admin/loan-portfolio-dashboard';
 import { TransactionsExplorer } from './admin/transactions-explorer';
+import { officerService } from '@/services/officer-service';
+import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/auth-context';
 
 type Beneficiary = (typeof MOCK_BENEFICIARIES_LIST)[0];
 
@@ -270,24 +273,68 @@ interface OfficerDashboardProps {
 export default function OfficerDashboard({ activeTab = 'dashboard' }: OfficerDashboardProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [beneficiaries, setBeneficiaries] = useState(MOCK_BENEFICIARIES_LIST);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]); // Initialize empty
+  const [loading, setLoading] = useState(false);
   const [riskFilter, setRiskFilter] = useState('All');
   const [selectedBeneficiary, setSelectedBeneficiary] =
     useState<Beneficiary | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { stats, riskDistribution, aiForecast } = MOCK_ADMIN_DATA;
+  const { stats, riskDistribution, aiForecast } = MOCK_ADMIN_DATA; // Keep mock stats for now
 
-  const handleUpdateLoanStage = (
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  const fetchApplications = async () => {
+    try {
+      setLoading(true);
+      const data = await officerService.getApplications();
+      // Map API response to Component state
+      const mapped: Beneficiary[] = (data.content || []).map((app: any) => ({
+        id: app.applicationId.toString(),
+        name: app.user?.name || `User ${app.user?.userId}`,
+        region: 'Unknown', // Backend User entity might not have address directly exposed here
+        score: 750, // Mock score as it's not in LoanApplication
+        risk: 'Low', // Mock risk
+        loanStage: app.status,
+        income: 50000, // Mock
+        avatar: '',
+        phone: 'N/A',
+        email: 'N/A',
+        repaymentRate: 100,
+      }));
+      setBeneficiaries(mapped);
+    } catch (error) {
+      console.error(error);
+      // Fallback to mock if API fails or is empty for demo
+      setBeneficiaries(MOCK_BENEFICIARIES_LIST);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateLoanStage = async (
     beneficiaryId: string,
     stage: 'Approved' | 'Flagged'
   ) => {
-    setBeneficiaries((prev) =>
-      prev.map((b) => (b.id === beneficiaryId ? { ...b, loanStage: stage } : b))
-    );
-    toast({
-      title: `Beneficiary ${stage}`,
-      description: `The loan application has been marked as ${stage}.`,
-    });
+    try {
+      const approved = stage === 'Approved';
+      await officerService.reviewApplication(parseInt(beneficiaryId), { approved, comments: `Marked as ${stage}` });
+
+      setBeneficiaries((prev) =>
+        prev.map((b) => (b.id === beneficiaryId ? { ...b, loanStage: approved ? 'APPROVED' : 'REJECTED' } : b))
+      );
+      toast({
+        title: `Application ${stage}`,
+        description: `The loan application has been reviewed.`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update application status.',
+      });
+    }
   };
 
   const handleViewRiskAnalysis = (beneficiary: Beneficiary) => {

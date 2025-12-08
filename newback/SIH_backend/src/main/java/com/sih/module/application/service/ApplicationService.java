@@ -1,6 +1,7 @@
 package com.sih.module.application.service;
 
 import com.sih.common.config.FailSafeConfig;
+import com.sih.common.enums.UserRole;
 import com.sih.common.exception.BadRequestException;
 import com.sih.common.exception.ResourceNotFoundException;
 import com.sih.module.application.dto.*;
@@ -128,7 +129,7 @@ public class ApplicationService {
 
         // Allow if user is the owner OR if user is an OFFICER/ADMIN
         boolean isOwner = application.getUser().getUserId().equals(userId);
-        boolean isOfficer = "OFFICER".equals(requestingUser.getRole()) || "ADMIN".equals(requestingUser.getRole());
+        boolean isOfficer = UserRole.LOAN_OFFICER == requestingUser.getRole() || UserRole.ADMIN == requestingUser.getRole();
 
         if (!isOwner && !isOfficer) {
             throw new BadRequestException("You are not authorized to view this application");

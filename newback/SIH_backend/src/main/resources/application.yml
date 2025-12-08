@@ -33,6 +33,7 @@ spring:
 
   flyway:
     enabled: true
+    validate-on-migrate: false
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: 0

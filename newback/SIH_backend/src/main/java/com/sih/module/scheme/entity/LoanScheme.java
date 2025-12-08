@@ -30,6 +30,10 @@ public class LoanScheme {
     @Column(name = "provider_name", length = 200)
     private String providerName;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "partner_id")
+    private com.sih.module.partner.entity.ChannelPartner channelPartner;
+
     @Column(name = "loan_category", length = 100)
     private String loanCategory;
 

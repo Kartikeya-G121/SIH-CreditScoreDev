@@ -21,8 +21,15 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
 
     List<LoanApplication> findByGroupGroupIdAndUserUserId(Long groupId, Long userId);
 
+    long countByStatus(String status);
+
     // Analytics methods
-    Long countByStatus(String status);
+    // For Partner Dashboard
+    Page<LoanApplication> findBySchemeChannelPartnerId(Long partnerId, Pageable pageable);
+    
+    // For Loan Officer Dashboard
+    Page<LoanApplication> findBySchemeSchemeIdIn(java.util.Collection<Integer> schemeIds, Pageable pageable);
+
 
     // State-wise statistics query
     @Query("SELECT bp.state as state, " +
