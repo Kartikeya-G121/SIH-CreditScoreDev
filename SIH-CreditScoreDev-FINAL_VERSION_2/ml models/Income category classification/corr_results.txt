@@ -1,0 +1,28 @@
+--- TOP 15 CORRELATIONS WITH INCOME ---
+income_numeric                      1.000000
+units_consumed_mean                 0.531347
+units_consumed_median               0.528648
+units_consumed_mode                 0.520451
+units_consumed_max                  0.511129
+units_consumed_min                  0.497560
+total_monthly_utility_spend         0.476247
+electricitybilling_amount_mean      0.472337
+units_consumed_std                  0.471498
+electricitybilling_amount_median    0.469808
+electricitybilling_amount_mode      0.465214
+electricitybilling_amount_max       0.457794
+electricitybilling_amount_min       0.446665
+interaction_elec_hh                 0.438313
+electricitybilling_amount_std       0.419890
+units_per_capita                    0.408660
+electricity_bill_per_capita         0.374417
+mobilerechargeamount_mean           0.191897
+average_recharge_value              0.191897
+mobilerechargeamount_median         0.191202
+
+--- MISSING DATA SKEW ---
+                 missing_electricity  missing_gas  missing_mobile
+income_category                                                  
+High                        0.963941     0.960881        0.974801
+Low                         1.038157     1.045656        1.048896
+Medium                      1.004020     1.001080        1.005581

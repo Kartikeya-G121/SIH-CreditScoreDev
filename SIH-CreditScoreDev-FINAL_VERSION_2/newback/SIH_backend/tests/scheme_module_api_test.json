@@ -1,0 +1,159 @@
+{
+	"info": {
+		"_postman_id": "scheme-module-api",
+		"name": "Scheme Module API",
+		"description": "API Collection for testing the Scheme Module endpoints.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create Scheme",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"schemeName\": \"Micro Business Loan\",\n    \"minAmount\": 10000.00,\n    \"maxAmount\": 500000.00,\n    \"baseInterestRate\": 9.5,\n    \"minTenureMonths\": 6,\n    \"maxTenureMonths\": 36,\n    \"isTieredInterest\": true,\n    \"tierThreshold\": 200000.00,\n    \"tierInterestRate\": 11.0\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/schemes",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"schemes"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Active Schemes",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/v1/schemes",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"schemes"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Schemes (Admin)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/v1/schemes/all",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"schemes",
+						"all"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Scheme By ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/v1/schemes/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"schemes",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Scheme",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"schemeName\": \"Micro Business Loan Updated\",\n    \"minAmount\": 15000.00,\n    \"maxAmount\": 600000.00,\n    \"baseInterestRate\": 9.0,\n    \"minTenureMonths\": 12,\n    \"maxTenureMonths\": 48,\n    \"isTieredInterest\": false,\n    \"tierThreshold\": null,\n    \"tierInterestRate\": null\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/schemes/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"schemes",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Toggle Scheme Status",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/v1/schemes/1/toggle",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"schemes",
+						"1",
+						"toggle"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

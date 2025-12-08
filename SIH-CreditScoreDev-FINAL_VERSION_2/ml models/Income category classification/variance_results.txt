@@ -1,0 +1,13 @@
+--- STD DEV PER INCOME CATEGORY (Check for 'Too Uniform' clusters) ---
+                 units_consumed_mean  electricitybilling_amount_mean  gas_refill_amt_mean  mobilerechargeamount_mean
+income_category                                                                                                     
+High                      193.895214                     1581.758441           163.885520                 590.484245
+Low                        66.115375                      563.674714           169.701379                 908.397817
+Medium                     98.669590                      834.733762           167.081847                 986.421114
+
+--- MEAN PER INCOME CATEGORY ---
+                 units_consumed_mean  electricitybilling_amount_mean  gas_refill_amt_mean  mobilerechargeamount_mean
+income_category                                                                                                     
+High                      345.133822                     2422.042113           994.213883                1051.916242
+Low                       142.124509                      994.001750           994.519207                 641.296856
+Medium                    211.608052                     1480.304172           997.502209                1142.793099

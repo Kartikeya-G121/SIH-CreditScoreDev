@@ -1,0 +1,306 @@
+====================================================================================================
+DETAILED TEST ANALYSIS - test.csv
+Trained on: Full 8k dataset | Tested on: 3 samples from test.csv
+====================================================================================================
+
+====================================================================================================
+TEST SAMPLE 1
+====================================================================================================
+
+Beneficiary ID: BEN4036
+Actual Risk Score: 32.47
+Risk Category: ✅ LOW RISK
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ENSEMBLE PREDICTIONS (5 Models)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+  Model_1_Shallow              35.88
+  Model_2_Medium               33.65
+  Model_3_Deep                 33.59
+  Model_4_FastLR               33.07
+  Model_5_Balanced             34.45
+
+  Ensemble Average             34.13
+  Prediction Std Dev            0.98
+  Prediction Error              1.65
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+SHAP FEATURE CONTRIBUTIONS (Averaged across 5 models)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Feature                        Value        SHAP Impact     Effect
+------------------------------ ------------ --------------- ------------------------------
+on_time_emis                   231.00               -7.3759 ↓ Decreases risk
+late_payments                  0.00                 -4.2377 ↓ Decreases risk
+current_outstanding            0.00                 -3.5178 ↓ Decreases risk
+tenure_months                  231.00               +2.3726 ↑ Increases risk
+bpl_status                     1.00                 +1.8483 ↑ Increases risk
+missed_payments                0.00                 -1.5069 ↓ Decreases risk
+emis_pending                   0.00                 -1.3698 ↓ Decreases risk
+total_emis                     231.00               +0.9760 ↑ Increases risk
+subsidy_amount                 55043.00             +0.9074 ↑ Increases risk
+average_delay_days             11.00                -0.7862 ↓ Decreases risk
+rural_urban                    0.00                 -0.3268 ↓ Decreases risk
+max_delay_days                 12.00                -0.2349 ↓ Decreases risk
+emis_paid                      231.00               +0.1938 ↑ Increases risk
+dependents_count               2.00                 -0.0427 ↓ Decreases risk
+family_size                    3.00                 -0.0409 ↓ Decreases risk
+loan_amount                    203865.00            +0.0370 ↑ Increases risk
+emi_amount                     1670.00              -0.0239 ↓ Decreases risk
+dependency_ratio               1.50                 -0.0177 ↓ Decreases risk
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+LIME EXPLANATION (Top 10 Features)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Feature                        LIME Weight     Interpretation
+------------------------------ --------------- ----------------------------------------
+on_time_emis > 17.00                   -6.9468 Pushes risk lower
+current_outstanding <= 0.00            -6.5684 Pushes risk lower
+0.00 < bpl_status <= 1.00              +6.5681 Pushes risk higher
+late_payments <= 1.00                  -2.6407 Pushes risk lower
+tenure_months > 56.00                  +2.4140 Pushes risk higher
+5.00 < average_delay_days <= 11.00         -2.1357 Pushes risk lower
+emis_pending <= 0.00                   -1.8477 Pushes risk lower
+missed_payments <= 0.00                -1.8087 Pushes risk lower
+40139.00 < subsidy_amount <= 56189.25         +0.8913 Pushes risk higher
+rural_urban <= 0.00                    -0.5680 Pushes risk lower
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+PLAIN ENGLISH EXPLANATION
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Beneficiary BEN4036 has an actual risk score of 32.47.
+Our ensemble predicts: 34.13 (error: 1.65)
+
+🔴 FACTORS INCREASING RISK:
+  • tenure_months = 231.00 adds 2.37 points
+  • bpl_status = 1.00 adds 1.85 points
+  • total_emis = 231.00 adds 0.98 points
+
+🟢 FACTORS DECREASING RISK:
+  • 231 on-time payments reduces risk by 7.38 points
+  • late_payments = 0.00 reduces risk by 4.24 points
+  • current_outstanding = 0.00 reduces risk by 3.52 points
+
+✅ RECOMMENDATION: Low risk - Maintain current behavior
+   → Continue monitoring, no immediate action needed
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+KEY METRICS
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Loan Amount: ₹203,865
+Current Outstanding: ₹0
+Total EMIs: 231
+EMIs Paid: 231 | Pending: 0
+On-time EMIs: 231
+Late Payments: 0 | Missed: 0
+Average Delay: 11 days | Max Delay: 12 days
+
+====================================================================================================
+TEST SAMPLE 2
+====================================================================================================
+
+Beneficiary ID: BEN4220
+Actual Risk Score: 46.02
+Risk Category: ⚡ MEDIUM RISK
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ENSEMBLE PREDICTIONS (5 Models)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+  Model_1_Shallow              47.93
+  Model_2_Medium               48.35
+  Model_3_Deep                 47.25
+  Model_4_FastLR               46.52
+  Model_5_Balanced             49.17
+
+  Ensemble Average             47.85
+  Prediction Std Dev            0.91
+  Prediction Error              1.83
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+SHAP FEATURE CONTRIBUTIONS (Averaged across 5 models)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Feature                        Value        SHAP Impact     Effect
+------------------------------ ------------ --------------- ------------------------------
+on_time_emis                   2.00                 +3.6190 ↑ Increases risk
+current_outstanding            0.00                 -3.0361 ↓ Decreases risk
+bpl_status                     1.00                 +2.2756 ↑ Increases risk
+average_delay_days             11.00                -2.0161 ↓ Decreases risk
+tenure_months                  73.00                +1.4959 ↑ Increases risk
+emis_pending                   0.00                 -1.4100 ↓ Decreases risk
+missed_payments                2.00                 -0.8147 ↓ Decreases risk
+total_emis                     73.00                +0.5399 ↑ Increases risk
+max_delay_days                 6.00                 -0.3697 ↓ Decreases risk
+emis_paid                      73.00                +0.2235 ↑ Increases risk
+loan_amount                    101746.00            +0.2234 ↑ Increases risk
+emi_amount                     1638.00              -0.2072 ↓ Decreases risk
+rural_urban                    1.00                 +0.1444 ↑ Increases risk
+subsidy_amount                 23401.00             -0.0986 ↓ Decreases risk
+late_payments                  1.00                 +0.0837 ↑ Increases risk
+dependency_ratio               2.67                 -0.0317 ↓ Decreases risk
+dependents_count               3.00                 -0.0291 ↓ Decreases risk
+family_size                    8.00                 -0.0182 ↓ Decreases risk
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+LIME EXPLANATION (Top 10 Features)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Feature                        LIME Weight     Interpretation
+------------------------------ --------------- ----------------------------------------
+0.00 < bpl_status <= 1.00              +6.7167 Pushes risk higher
+current_outstanding <= 0.00            -6.3307 Pushes risk lower
+on_time_emis <= 2.00                   +5.1922 Pushes risk higher
+late_payments <= 1.00                  -2.6502 Pushes risk lower
+tenure_months > 56.00                  +2.3103 Pushes risk higher
+5.00 < average_delay_days <= 11.00         -2.1576 Pushes risk lower
+subsidy_amount <= 24980.25             -1.9904 Pushes risk lower
+emis_pending <= 0.00                   -1.7531 Pushes risk lower
+loan_amount <= 107943.75               -0.9581 Pushes risk lower
+0.00 < rural_urban <= 1.00             +0.4677 Pushes risk higher
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+PLAIN ENGLISH EXPLANATION
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Beneficiary BEN4220 has an actual risk score of 46.02.
+Our ensemble predicts: 47.85 (error: 1.83)
+
+🔴 FACTORS INCREASING RISK:
+  • on_time_emis = 2.00 adds 3.62 points
+  • bpl_status = 1.00 adds 2.28 points
+  • tenure_months = 73.00 adds 1.50 points
+
+🟢 FACTORS DECREASING RISK:
+  • current_outstanding = 0.00 reduces risk by 3.04 points
+  • average_delay_days = 11.00 reduces risk by 2.02 points
+  • emis_pending = 0.00 reduces risk by 1.41 points
+
+⚡ RECOMMENDATION: Medium risk - Monitor and support
+   → Payment reminders, financial literacy, regular check-ins
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+KEY METRICS
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Loan Amount: ₹101,746
+Current Outstanding: ₹0
+Total EMIs: 73
+EMIs Paid: 73 | Pending: 0
+On-time EMIs: 2
+Late Payments: 1 | Missed: 2
+Average Delay: 11 days | Max Delay: 6 days
+
+====================================================================================================
+TEST SAMPLE 3
+====================================================================================================
+
+Beneficiary ID: BEN4037
+Actual Risk Score: 32.47
+Risk Category: ✅ LOW RISK
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+ENSEMBLE PREDICTIONS (5 Models)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+  Model_1_Shallow              40.93
+  Model_2_Medium               43.48
+  Model_3_Deep                 41.91
+  Model_4_FastLR               41.46
+  Model_5_Balanced             40.72
+
+  Ensemble Average             41.70
+  Prediction Std Dev            0.98
+  Prediction Error              9.22
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+SHAP FEATURE CONTRIBUTIONS (Averaged across 5 models)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Feature                        Value        SHAP Impact     Effect
+------------------------------ ------------ --------------- ------------------------------
+on_time_emis                   215.00               -6.9058 ↓ Decreases risk
+missed_payments                16.00                +4.4493 ↑ Increases risk
+late_payments                  0.00                 -3.4555 ↓ Decreases risk
+current_outstanding            0.00                 -2.5746 ↓ Decreases risk
+tenure_months                  231.00               +2.1242 ↑ Increases risk
+bpl_status                     1.00                 +1.8438 ↑ Increases risk
+emis_pending                   0.00                 -1.3297 ↓ Decreases risk
+subsidy_amount                 55043.00             +0.9154 ↑ Increases risk
+average_delay_days             11.00                -0.8119 ↓ Decreases risk
+total_emis                     231.00               +0.8065 ↑ Increases risk
+rural_urban                    0.00                 -0.3794 ↓ Decreases risk
+max_delay_days                 12.00                -0.1362 ↓ Decreases risk
+emi_amount                     1670.00              -0.0954 ↓ Decreases risk
+emis_paid                      231.00               +0.0713 ↑ Increases risk
+family_size                    3.00                 -0.0662 ↓ Decreases risk
+dependents_count               2.00                 -0.0444 ↓ Decreases risk
+loan_amount                    203865.00            +0.0145 ↑ Increases risk
+dependency_ratio               1.50                 +0.0011 ↑ Increases risk
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+LIME EXPLANATION (Top 10 Features)
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Feature                        LIME Weight     Interpretation
+------------------------------ --------------- ----------------------------------------
+on_time_emis > 17.00                   -6.9442 Pushes risk lower
+0.00 < bpl_status <= 1.00              +6.5608 Pushes risk higher
+current_outstanding <= 0.00            -6.3872 Pushes risk lower
+missed_payments > 5.00                 +3.7849 Pushes risk higher
+late_payments <= 1.00                  -2.5747 Pushes risk lower
+tenure_months > 56.00                  +2.3116 Pushes risk higher
+5.00 < average_delay_days <= 11.00         -2.1575 Pushes risk lower
+emis_pending <= 0.00                   -1.9206 Pushes risk lower
+40139.00 < subsidy_amount <= 56189.25         +0.9426 Pushes risk higher
+rural_urban <= 0.00                    -0.5789 Pushes risk lower
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+PLAIN ENGLISH EXPLANATION
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Beneficiary BEN4037 has an actual risk score of 32.47.
+Our ensemble predicts: 41.70 (error: 9.22)
+
+🔴 FACTORS INCREASING RISK:
+  • 16 late/missed payments adds 4.45 points
+  • tenure_months = 231.00 adds 2.12 points
+  • bpl_status = 1.00 adds 1.84 points
+
+🟢 FACTORS DECREASING RISK:
+  • 215 on-time payments reduces risk by 6.91 points
+  • late_payments = 0.00 reduces risk by 3.46 points
+  • current_outstanding = 0.00 reduces risk by 2.57 points
+
+✅ RECOMMENDATION: Low risk - Maintain current behavior
+   → Continue monitoring, no immediate action needed
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+KEY METRICS
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Loan Amount: ₹203,865
+Current Outstanding: ₹0
+Total EMIs: 231
+EMIs Paid: 231 | Pending: 0
+On-time EMIs: 215
+Late Payments: 0 | Missed: 16
+Average Delay: 11 days | Max Delay: 12 days
+
+====================================================================================================
+SUMMARY
+====================================================================================================
+
+Training Dataset: 8234 samples
+Test Dataset: 3 samples
+Cross-Validation R²: 0.9410 (+/- 0.0024)
+
+Test Results:
+  Sample 1: Actual=32.47, Predicted=34.13, Error=1.65
+  Sample 2: Actual=46.02, Predicted=47.85, Error=1.83
+  Sample 3: Actual=32.47, Predicted=41.70, Error=9.22
+
+====================================================================================================
+END OF REPORT
+====================================================================================================

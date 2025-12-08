@@ -1,0 +1,19 @@
+# 1. Health Check
+curl http://localhost:5000/health
+
+# 2. Switch to V1 (Full Model)
+curl -X POST http://localhost:5000/models/switch/v1
+
+# 3. Predict with Active Model (V1)
+curl -X POST http://localhost:5000/predict ^
+-H "Content-Type: application/json" ^
+-d "{\"units_consumed_mean\": 150.5, \"electricitybilling_amount_mean\": 1200.0, \"mobilerechargeamount_mean\": 450.0, \"units_consumed_median\": 140.0, \"subsidy_ratio\": 0.1, \"gas_refill_subsidy_amt_std\": 20.0, \"missing_mobile\": 0, \"gas_refill_subsidy_amt_mean\": 50.0, \"mobilerechargeamount_max\": 600.0, \"units_consumed_mode\": 150.0, \"units_consumed_max\": 200.0, \"mobilerechargeamount_mode\": 400.0, \"mobilerechargeamount_std\": 50.0, \"electricitybilling_amount_max\": 1500.0, \"mobilerechargeamount_min\": 300.0}"
+
+# 4. Switch to V2 (Risk Model)
+curl -X POST http://localhost:5000/models/switch/v2
+
+# 5. Predict with Active Model (V2 - Using Subset)
+# Note: You can send full payload, the API will auto-select features for V2
+curl -X POST http://localhost:5000/predict ^
+-H "Content-Type: application/json" ^
+-d "{\"mobilerechargeamount_median\": 350.0, \"mobilerechargeamount_max\": 500.0, \"units_consumed_mean\": 130.0, \"units_consumed_max\": 180.0, \"mobile_bill_per_capita\": 100.0, \"electricitybilling_amount_mean\": 900.0, \"electricitybilling_amount_median\": 850.0, \"units_per_capita\": 40.0, \"electricity_bill_per_capita\": 250.0, \"gas_refill_subsidy_amt_std\": 0.0, \"gas_refill_subsidy_amt_mode\": 0.0, \"subsidy_ratio\": 0.0, \"missing_gas\": 1, \"missing_electricity\": 0, \"gas_refill_amt_mean\": 950.0}"
