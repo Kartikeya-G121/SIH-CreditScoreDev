@@ -38,7 +38,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/favicon.ico").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "LOAN_OFFICER", "OFFICER")
+                        .requestMatchers("/api/v1/admin/**")
+                        .hasAnyRole("ADMIN", "LOAN_OFFICER", "OFFICER", "CHANNEL_PARTNER")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { RepaymentLineChart } from './repayment-line-chart';
 import { StatePerformanceChart } from './state-performance-chart';
 import { GeographicRiskMap } from './geographic-risk-map';
-import { ProviderPerformanceTable } from './provider-performance-table';
+
 import { DemographicsCharts } from './demographics-charts';
 
 export default function LoanPortfolioDashboard() {
@@ -299,7 +299,7 @@ export default function LoanPortfolioDashboard() {
                         </Card>
 
                         {/* Provider Performance - Below Scheme Performance */}
-                        <ProviderPerformanceTable data={analytics.providerPerformance || []} />
+                        {/* Provider Performance Table Removed as per request */}
 
                         {/* Demographics Section */}
                         <DemographicsCharts

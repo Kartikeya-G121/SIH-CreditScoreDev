@@ -4,6 +4,7 @@ import requests
 import logging
 from typing import Optional
 from urllib.parse import urlparse
+from config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +27,8 @@ class FileDownloader:
         logger.info(f"Downloading file from: {url}")
         
         try:
-            # Make request
-            response = requests.get(url, timeout=30, stream=True)
+            # Make request with configurable timeout
+            response = requests.get(url, timeout=Config.HTTP_TIMEOUT, stream=True)
             response.raise_for_status()
             
             # Determine file extension from URL or content-type

@@ -33,19 +33,19 @@ public class LoanOfficerController {
             @AuthenticationPrincipal Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         LoanOfficer officer = officerRepository.findByUserUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Officer not found"));
 
         Set<Integer> assignedSchemes = officer.getAssignedSchemeIds();
-        
+
         Page<LoanApplication> applications;
         if (assignedSchemes.isEmpty()) {
             applications = Page.empty();
         } else {
             applications = applicationRepository.findBySchemeSchemeIdIn(assignedSchemes, PageRequest.of(page, size));
         }
-        
+
         return ResponseEntity.ok(ApiResponse.success(applications));
     }
 
@@ -54,7 +54,7 @@ public class LoanOfficerController {
             @AuthenticationPrincipal Long userId,
             @PathVariable Long id,
             @RequestBody ReviewRequest request) { // Approve/Reject
-        
+
         ApplicationResponse response = applicationService.reviewApplication(id, userId, request);
         return ResponseEntity.ok(ApiResponse.success("Application reviewed successfully", response));
     }
@@ -64,7 +64,7 @@ public class LoanOfficerController {
             @AuthenticationPrincipal Long userId,
             @PathVariable Long id,
             @RequestBody SanctionRequest request) {
-        
+
         ApplicationResponse response = applicationService.sanctionApplication(id, userId, request);
         return ResponseEntity.ok(ApiResponse.success("Application sanctioned successfully", response));
     }

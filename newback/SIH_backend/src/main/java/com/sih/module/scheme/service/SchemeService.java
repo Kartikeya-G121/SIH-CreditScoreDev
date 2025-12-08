@@ -11,9 +11,18 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.sih.module.auth.entity.User;
+import com.sih.module.auth.repository.UserRepository;
+import com.sih.module.partner.entity.ChannelPartner;
+import com.sih.module.partner.repository.ChannelPartnerRepository;
+import com.sih.common.enums.UserRole;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 
 @Slf4j
 @Service
@@ -21,13 +30,30 @@ import java.util.stream.Collectors;
 public class SchemeService {
 
     private final LoanSchemeRepository schemeRepository;
+    private final ChannelPartnerRepository channelPartnerRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     @CacheEvict(value = "schemes", allEntries = true)
-    public SchemeResponse createScheme(SchemeRequest request, String createdBy) {
+    public SchemeResponse createScheme(SchemeRequest request, Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        String finalProviderName = request.getProviderName();
+        ChannelPartner partner = null;
+
+        if (user.getRole() == UserRole.CHANNEL_PARTNER) {
+            partner = channelPartnerRepository.findByUser(user)
+                    .orElseThrow(() -> new ResourceNotFoundException("Channel Partner profile not found"));
+            // Force provider name to match the partner's organization default or explicit
+            // name
+            finalProviderName = partner.getOrganizationName();
+        }
+
         LoanScheme scheme = LoanScheme.builder()
                 .schemeName(request.getSchemeName())
-                .providerName(request.getProviderName())
+                .providerName(finalProviderName)
+                .channelPartner(partner) // Associate with partner
                 .loanCategory(request.getLoanCategory())
                 .minAmount(request.getMinAmount())
                 .maxAmount(request.getMaxAmount())
@@ -48,11 +74,13 @@ public class SchemeService {
                 .subsidyPercentage(request.getSubsidyPercentage())
                 .gracePeriodDays(request.getGracePeriodDays() != null ? request.getGracePeriodDays() : 0)
                 .penaltyRate(request.getPenaltyRate())
-                .emiBounceCharges(request.getEmiBounceCharges() != null ? request.getEmiBounceCharges() : java.math.BigDecimal.ZERO)
+                .emiBounceCharges(request.getEmiBounceCharges() != null ? request.getEmiBounceCharges()
+                        : java.math.BigDecimal.ZERO)
                 .allowPrepayment(request.getAllowPrepayment() != null ? request.getAllowPrepayment() : true)
-                .prepaymentPenalty(request.getPrepaymentPenalty() != null ? request.getPrepaymentPenalty() : java.math.BigDecimal.ZERO)
+                .prepaymentPenalty(request.getPrepaymentPenalty() != null ? request.getPrepaymentPenalty()
+                        : java.math.BigDecimal.ZERO)
                 .isGroupLoanAllowed(request.getIsGroupLoanAllowed() != null ? request.getIsGroupLoanAllowed() : false)
-                .createdBy(createdBy)
+                .createdBy(user.getEmail())
                 .isActive(true)
                 .build();
 
@@ -70,12 +98,37 @@ public class SchemeService {
     }
 
     public List<SchemeResponse> getAllSchemes() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || authentication.getPrincipal() == null) {
+                return schemeRepository.findAll().stream()
+                        .map(this::mapToResponse)
+                        .collect(Collectors.toList());
+            }
+
+            Long userId = (Long) authentication.getPrincipal();
+            User user = userRepository.findById(userId).orElse(null);
+
+            if (user != null && user.getRole() == UserRole.CHANNEL_PARTNER) {
+                ChannelPartner partner = channelPartnerRepository.findByUser(user)
+                        .orElseThrow(() -> new ResourceNotFoundException("Channel Partner profile not found"));
+                String providerName = partner.getOrganizationName();
+
+                // Filter by provider name
+                return schemeRepository.findAll().stream()
+                        .filter(s -> providerName != null && providerName.equals(s.getProviderName()))
+                        .map(this::mapToResponse)
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            log.error("Error in getAllSchemes: {}", e.getMessage());
+        }
+
         return schemeRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
-
-
 
     public SchemeResponse getSchemeById(Integer schemeId) {
         LoanScheme scheme = schemeRepository.findById(schemeId)
@@ -88,6 +141,8 @@ public class SchemeService {
     public SchemeResponse updateScheme(Integer schemeId, SchemeRequest request) {
         LoanScheme scheme = schemeRepository.findById(schemeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Scheme not found"));
+
+        validateSchemeOwnership(scheme);
 
         if (request.getSchemeName() != null)
             scheme.setSchemeName(request.getSchemeName());
@@ -111,22 +166,37 @@ public class SchemeService {
             scheme.setTierThreshold(request.getTierThreshold());
         if (request.getTierInterestRate() != null)
             scheme.setTierInterestRate(request.getTierInterestRate());
-        
-        if (request.getMinAge() != null) scheme.setMinAge(request.getMinAge());
-        if (request.getMaxAge() != null) scheme.setMaxAge(request.getMaxAge());
-        if (request.getGenderAllowed() != null) scheme.setGenderAllowed(request.getGenderAllowed());
-        if (request.getCasteCategory() != null) scheme.setCasteCategory(request.getCasteCategory());
-        if (request.getIncomeMax() != null) scheme.setIncomeMax(request.getIncomeMax());
-        if (request.getMaxExistingLoans() != null) scheme.setMaxExistingLoans(request.getMaxExistingLoans());
-        if (request.getIsSubsidy() != null) scheme.setIsSubsidy(request.getIsSubsidy());
-        if (request.getSubsidyType() != null) scheme.setSubsidyType(request.getSubsidyType());
-        if (request.getSubsidyPercentage() != null) scheme.setSubsidyPercentage(request.getSubsidyPercentage());
-        if (request.getGracePeriodDays() != null) scheme.setGracePeriodDays(request.getGracePeriodDays());
-        if (request.getPenaltyRate() != null) scheme.setPenaltyRate(request.getPenaltyRate());
-        if (request.getEmiBounceCharges() != null) scheme.setEmiBounceCharges(request.getEmiBounceCharges());
-        if (request.getAllowPrepayment() != null) scheme.setAllowPrepayment(request.getAllowPrepayment());
-        if (request.getPrepaymentPenalty() != null) scheme.setPrepaymentPenalty(request.getPrepaymentPenalty());
-        if (request.getIsGroupLoanAllowed() != null) scheme.setIsGroupLoanAllowed(request.getIsGroupLoanAllowed());
+
+        if (request.getMinAge() != null)
+            scheme.setMinAge(request.getMinAge());
+        if (request.getMaxAge() != null)
+            scheme.setMaxAge(request.getMaxAge());
+        if (request.getGenderAllowed() != null)
+            scheme.setGenderAllowed(request.getGenderAllowed());
+        if (request.getCasteCategory() != null)
+            scheme.setCasteCategory(request.getCasteCategory());
+        if (request.getIncomeMax() != null)
+            scheme.setIncomeMax(request.getIncomeMax());
+        if (request.getMaxExistingLoans() != null)
+            scheme.setMaxExistingLoans(request.getMaxExistingLoans());
+        if (request.getIsSubsidy() != null)
+            scheme.setIsSubsidy(request.getIsSubsidy());
+        if (request.getSubsidyType() != null)
+            scheme.setSubsidyType(request.getSubsidyType());
+        if (request.getSubsidyPercentage() != null)
+            scheme.setSubsidyPercentage(request.getSubsidyPercentage());
+        if (request.getGracePeriodDays() != null)
+            scheme.setGracePeriodDays(request.getGracePeriodDays());
+        if (request.getPenaltyRate() != null)
+            scheme.setPenaltyRate(request.getPenaltyRate());
+        if (request.getEmiBounceCharges() != null)
+            scheme.setEmiBounceCharges(request.getEmiBounceCharges());
+        if (request.getAllowPrepayment() != null)
+            scheme.setAllowPrepayment(request.getAllowPrepayment());
+        if (request.getPrepaymentPenalty() != null)
+            scheme.setPrepaymentPenalty(request.getPrepaymentPenalty());
+        if (request.getIsGroupLoanAllowed() != null)
+            scheme.setIsGroupLoanAllowed(request.getIsGroupLoanAllowed());
 
         scheme = schemeRepository.save(scheme);
         return mapToResponse(scheme);
@@ -134,12 +204,14 @@ public class SchemeService {
 
     @Transactional
     @Caching(evict = {
-        @CacheEvict(value = "schemes", allEntries = true),
-        @CacheEvict(value = "loanPortfolioAnalytics", allEntries = true)
+            @CacheEvict(value = "schemes", allEntries = true),
+            @CacheEvict(value = "loanPortfolioAnalytics", allEntries = true)
     })
     public SchemeResponse toggleScheme(Integer schemeId) {
         LoanScheme scheme = schemeRepository.findById(schemeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Scheme not found"));
+
+        validateSchemeOwnership(scheme);
 
         scheme.setIsActive(!scheme.getIsActive());
         scheme = schemeRepository.save(scheme);
@@ -154,6 +226,8 @@ public class SchemeService {
         if (!schemeRepository.existsById(schemeId)) {
             throw new ResourceNotFoundException("Scheme not found");
         }
+        LoanScheme scheme = schemeRepository.findById(schemeId).get();
+        validateSchemeOwnership(scheme);
         schemeRepository.deleteById(schemeId);
         log.info("Scheme {} deleted", schemeId);
     }
@@ -191,5 +265,29 @@ public class SchemeService {
                 .isActive(scheme.getIsActive())
                 .createdAt(scheme.getCreatedAt())
                 .build();
+    }
+
+    private void validateSchemeOwnership(LoanScheme scheme) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getPrincipal() == null) {
+            return; // No authentication context, skip validation
+        }
+
+        try {
+            Long userId = (Long) authentication.getPrincipal();
+            User user = userRepository.findById(userId).orElse(null);
+
+            if (user != null && user.getRole() == UserRole.CHANNEL_PARTNER) {
+                ChannelPartner partner = channelPartnerRepository.findByUser(user)
+                        .orElseThrow(() -> new ResourceNotFoundException("Channel Partner profile not found"));
+
+                if (!partner.getOrganizationName().equals(scheme.getProviderName())) {
+                    throw new AccessDeniedException("You can only manage schemes created by your organization.");
+                }
+            }
+        } catch (ClassCastException e) {
+            log.error("Error casting authentication principal: {}", e.getMessage());
+        }
     }
 }

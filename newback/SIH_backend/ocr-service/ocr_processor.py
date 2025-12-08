@@ -1,7 +1,5 @@
-import pytesseract
+import google.generativeai as genai
 from PIL import Image
-import cv2
-import numpy as np
 from pdf2image import convert_from_path
 import io
 import logging
@@ -14,49 +12,30 @@ logger = logging.getLogger(__name__)
 
 
 class OCRProcessor:
-    """Process images/PDFs and extract text using Tesseract and EasyOCR"""
+    """Process images/PDFs and extract text using Google Gemini"""
     
     def __init__(self):
-        # Set Tesseract command path
-        if Config.TESSERACT_CMD != 'tesseract':
-            pytesseract.pytesseract.tesseract_cmd = Config.TESSERACT_CMD
-        
+        try:
+            if not Config.GEMINI_API_KEY:
+                raise ValueError("GEMINI_API_KEY not found in environment variables")
+                
+            genai.configure(api_key=Config.GEMINI_API_KEY)
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
+            logger.info("Gemini API configured successfully")
+        except Exception as e:
+            logger.error(f"Failed to configure Gemini API: {str(e)}")
+            raise
 
-
-    def check_dependencies(self, file_type: str = None):
-        """Check if necessary dependencies are installed"""
-        
-        # Check Tesseract
-        if not shutil.which(Config.TESSERACT_CMD) and not os.path.exists(Config.TESSERACT_CMD):
-            raise RuntimeError(
-                f"Tesseract not found at {Config.TESSERACT_CMD}. "
-                "Please install Tesseract OCR and add it to PATH or update .env"
-            )
-            
-        # Check Poppler for PDF
-        if file_type == '.pdf':
-            if not shutil.which('pdftoppm') and not shutil.which('pdfinfo'):
-                raise RuntimeError(
-                    "Poppler not found. Please install Poppler for PDF processing. "
-                    "(apt-get install poppler-utils or download for Windows)"
-                )
-    
-
-    
     def extract_text_from_image(self, image_path: str, use_easyocr: bool = False) -> str:
-        """Extract text from image file"""
+        """Extract text from image file using Gemini"""
         logger.info(f"Extracting text from image: {image_path}")
         
-        self.check_dependencies()
-        
         try:
-            # Load and preprocess image
-            image = cv2.imread(image_path)
-            if image is None:
-                raise ValueError(f"Could not load image: {image_path}")
+            # Upload to Gemini
+            with open(image_path, 'rb') as f:
+                image_data = f.read()
             
-            preprocessed = self._preprocess_image(image)
-            return self._extract_with_tesseract(preprocessed)
+            return self._generate_content(image_data, 'image/jpeg') # mime type estimation
         
         except Exception as e:
             logger.error(f"Error extracting text from image: {e}")
@@ -66,22 +45,32 @@ class OCRProcessor:
         """Extract text from PDF file"""
         logger.info(f"Extracting text from PDF: {pdf_path}")
         
-        self.check_dependencies('.pdf')
-        
         try:
-            # Convert PDF to images
+            # Convert PDF to images using pdf2image (still needed as Gemini doesn't take local PDF files directly cleanly in one go without upload API, 
+            # but for 1.5 flash we can send image data. 
+            # Actually, standard Gemini API supports PDF upload via File API, but for simplicity/speed let's convert to images first 
+            # or use the file API if we want to be fancy. 
+            # Given the existing code used poppler to convert to images, let's keep that pattern but send images to Gemini.
+            # However, to be efficient, let's just send the PDF pages as images.)
+            
+            # Check dependencies for poppler
+            if not shutil.which('pdftoppm') and not shutil.which('pdfinfo'):
+                 # Fallback or error? The plan said modify dependencies. 
+                 # Let's keep using convert_from_path as it's already there
+                 pass
+
             images = convert_from_path(pdf_path, dpi=300)
             
             all_text = []
             for i, image in enumerate(images):
                 logger.info(f"Processing page {i+1}/{len(images)}")
                 
-                # Convert PIL image to numpy array
-                image_np = np.array(image)
-                preprocessed = self._preprocess_image(image_np)
-                
-                # Extract text
-                text = self._extract_with_tesseract(preprocessed)
+                # Convert PIL image to bytes
+                img_byte_arr = io.BytesIO()
+                image.save(img_byte_arr, format='JPEG')
+                img_byte_arr = img_byte_arr.getvalue()
+
+                text = self._generate_content(img_byte_arr, 'image/jpeg')
                 all_text.append(text)
             
             return '\n\n'.join(all_text)
@@ -94,78 +83,27 @@ class OCRProcessor:
         """Extract text from image bytes"""
         logger.info("Extracting text from image bytes")
         
-        self.check_dependencies()
-        
         try:
-            # Convert bytes to image
-            image = Image.open(io.BytesIO(image_bytes))
-            image_np = np.array(image)
-            
-            preprocessed = self._preprocess_image(image_np)
-            return self._extract_with_tesseract(preprocessed)
+            return self._generate_content(image_bytes, 'image/jpeg')
         
         except Exception as e:
             logger.error(f"Error extracting text from bytes: {e}")
             raise
     
-    def _preprocess_image(self, image: np.ndarray) -> np.ndarray:
-        """Preprocess image for better OCR accuracy"""
-        
-        # Convert to grayscale
-        if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = image
-        
-        # Apply denoising
-        denoised = cv2.fastNlMeansDenoising(gray)
-        
-        # Apply adaptive thresholding
-        thresh = cv2.adaptiveThreshold(
-            denoised, 255, 
-            cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
-            cv2.THRESH_BINARY, 11, 2
-        )
-        
-        # Deskew (optional - can improve accuracy)
-        # thresh = self._deskew(thresh)
-        
-        return thresh
-    
-    def _extract_with_tesseract(self, image: np.ndarray) -> str:
-        """Extract text using Tesseract OCR"""
-        logger.info("Using Tesseract OCR")
-        
-        # Configure Tesseract
-        custom_config = r'--oem 3 --psm 6'  # LSTM OCR Engine, Assume uniform block of text
-        
-        text = pytesseract.image_to_string(
-            image, 
-            lang=Config.OCR_LANGUAGE,
-            config=custom_config
-        )
-        
-        return text.strip()
-    
-
-    
-    def _deskew(self, image: np.ndarray) -> np.ndarray:
-        """Deskew image to improve OCR accuracy"""
-        coords = np.column_stack(np.where(image > 0))
-        angle = cv2.minAreaRect(coords)[-1]
-        
-        if angle < -45:
-            angle = -(90 + angle)
-        else:
-            angle = -angle
-        
-        (h, w) = image.shape[:2]
-        center = (w // 2, h // 2)
-        M = cv2.getRotationMatrix2D(center, angle, 1.0)
-        rotated = cv2.warpAffine(
-            image, M, (w, h),
-            flags=cv2.INTER_CUBIC,
-            borderMode=cv2.BORDER_REPLICATE
-        )
-        
-        return rotated
+    def _generate_content(self, data: bytes, mime_type: str) -> str:
+        """Helper to call Gemini API"""
+        try:
+            image_part = {
+                "mime_type": mime_type,
+                "data": data
+            }
+            
+            prompt = "Extract all text from this image. Provide the text exactly as it appears, maintaining structure and formatting. If no text exists, return empty string."
+            
+            response = self.model.generate_content([prompt, image_part])
+            
+            return response.text.strip()
+            
+        except Exception as e:
+            logger.error(f"Gemini API call failed: {e}")
+            raise

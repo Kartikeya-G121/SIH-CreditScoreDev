@@ -237,6 +237,24 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Start Partner Onboarding CTA */}
+        <section className="border-t bg-slate-50 py-12 dark:bg-slate-900/50">
+          <div className="container flex flex-col items-center gap-4 text-center">
+            <h3 className="font-headline text-2xl font-bold">
+              Become a Partner
+            </h3>
+            <p className="max-w-[600px] text-muted-foreground">
+              Join our network of financial institutions and help us drive financial inclusion across India.
+            </p>
+            <Button size="lg" variant="outline" asChild className="mt-2">
+              <Link href="/partner-onboard">
+                Partner Registration <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </section>
+        {/* End Partner Onboarding CTA */}
+
         {/* CTA Section */}
         <section className="bg-muted">
           <div className="container flex flex-col items-center justify-between gap-6 py-24 text-center sm:flex-row sm:text-left">

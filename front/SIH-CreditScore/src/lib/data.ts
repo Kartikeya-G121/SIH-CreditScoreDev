@@ -4,7 +4,7 @@ export type User = {
   name: string;
   email: string;
   avatar: string;
-  role: 'beneficiary' | 'officer';
+  role: 'beneficiary' | 'officer' | 'partner';
   region: string;
   aadhaar?: string;
   phone?: string;

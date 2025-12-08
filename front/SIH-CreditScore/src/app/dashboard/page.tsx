@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -19,6 +18,8 @@ import { Logo } from '@/components/layout/logo';
 import BeneficiaryDashboard from '@/components/dashboards/beneficiary-dashboard';
 import OfficerDashboard from '@/components/dashboards/officer-dashboard';
 import SchemeManagement from '@/components/dashboards/officer/scheme-management';
+import PartnerManagement from '@/components/dashboards/admin/partner-management';
+import PartnerDashboard from '@/components/dashboards/partner/partner-dashboard';
 
 
 import NotificationsCenter from '@/components/dashboards/notifications-center';
@@ -55,6 +56,16 @@ import {
 import { useLanguage } from '@/contexts/language-context';
 import { LanguageToggle } from '@/components/layout/language-toggle';
 import { MOCK_NOTIFICATION_CENTER } from '@/lib/data';
+
+import LoanPortfolioDashboard from '@/components/dashboards/admin/loan-portfolio-dashboard';
+import LoanApplicationsList from '@/components/dashboards/admin/application-management';
+import PartnerSchemeManagement from '@/components/dashboards/partner/partner-scheme-management';
+import RegionalAnalytics from '@/components/dashboards/partner/regional-analytics';
+import {
+  Briefcase,
+  Map as MapIcon,
+  Shield,
+} from 'lucide-react';
 
 function DashboardSidebar() {
   const { user } = useAuth();
@@ -141,6 +152,11 @@ function DashboardSidebar() {
         label: t('sidebar_dashboard'),
       },
       {
+        id: 'partner-management',
+        icon: <Users />,
+        label: 'Partner Management',
+      },
+      {
         id: 'portfolio',
         icon: <BarChart3 />,
         label: 'Loan Portfolio',
@@ -176,9 +192,18 @@ function DashboardSidebar() {
         label: t('sidebar_notifications'),
       },
     ],
+    partner: [
+      { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard /> },
+      { id: 'applications', label: 'Applications', icon: <FileText /> },
+      { id: 'schemes', label: 'My Schemes', icon: <Shield /> },
+      { id: 'portfolio', label: 'Loan Portfolio', icon: <Briefcase /> },
+      { id: 'analytics', label: 'Demographics', icon: <MapIcon /> },
+    ]
   };
 
-  const currentNavItems = user ? navItems[user.role] : [];
+  const currentNavItems: { id: string; icon: React.ReactNode; label: string }[] = user
+    ? (navItems as any)[user.role]
+    : [];
 
   return (
     <Sidebar>
@@ -202,12 +227,7 @@ function DashboardSidebar() {
       </SidebarContent>
       <SidebarFooter className="mt-auto">
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => handleNav('/help')}>
-              <HelpCircle />
-              <span>{t('sidebar_help')}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+
 
         </SidebarMenu>
         <Separator className="my-2" />
@@ -269,6 +289,13 @@ export default function DashboardPage() {
 
   const renderDashboard = () => {
     switch (user.role) {
+      case 'partner':
+        if (tab === 'applications') return <LoanApplicationsList />;
+        if (tab === 'schemes') return <PartnerSchemeManagement />;
+        if (tab === 'portfolio') return <LoanPortfolioDashboard />;
+        if (tab === 'analytics') return <RegionalAnalytics />;
+        return <PartnerDashboard />;
+
       case 'beneficiary':
 
 
@@ -306,6 +333,9 @@ export default function DashboardPage() {
         }
         if (tab === 'schemes') {
           return <SchemeManagement />;
+        }
+        if (tab === 'partner-management') {
+          return <PartnerManagement />;
         }
         return <OfficerDashboard activeTab={tab} />;
       default:

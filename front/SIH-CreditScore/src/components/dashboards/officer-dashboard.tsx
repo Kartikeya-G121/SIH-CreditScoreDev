@@ -79,7 +79,7 @@ import { useLanguage } from '@/contexts/language-context';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import RiskMonitoringCenter from './risk-monitoring-center';
-import { IndiaRepaymentHeatmap } from './india-repayment-heatmap';
+
 import UserManagement from './admin/user-management';
 import MLModelsManagement from './officer/ml-models-management';
 import ApplicationManagement from './admin/application-management';
@@ -342,38 +342,7 @@ export default function OfficerDashboard({ activeTab = 'dashboard' }: OfficerDas
     setIsDialogOpen(true);
   };
 
-  const stateRepaymentData = [
-    { id: 'MH', name: 'Maharashtra', repaymentRate: 98, totalAmount: 45000000, beneficiaries: 125000 },
-    { id: 'GJ', name: 'Gujarat', repaymentRate: 92, totalAmount: 38000000, beneficiaries: 98000 },
-    { id: 'AP', name: 'Andhra Pradesh', repaymentRate: 89, totalAmount: 32000000, beneficiaries: 87000 },
-    { id: 'UP', name: 'Uttar Pradesh', repaymentRate: 95, totalAmount: 52000000, beneficiaries: 145000 },
-    { id: 'BR', name: 'Bihar', repaymentRate: 88, totalAmount: 28000000, beneficiaries: 76000 },
-    { id: 'RJ', name: 'Rajasthan', repaymentRate: 99, totalAmount: 41000000, beneficiaries: 102000 },
-    { id: 'WB', name: 'West Bengal', repaymentRate: 91, totalAmount: 35000000, beneficiaries: 92000 },
-    { id: 'TN', name: 'Tamil Nadu', repaymentRate: 96, totalAmount: 48000000, beneficiaries: 118000 },
-    { id: 'KA', name: 'Karnataka', repaymentRate: 94, totalAmount: 44000000, beneficiaries: 108000 },
-    { id: 'KL', name: 'Kerala', repaymentRate: 97, totalAmount: 29000000, beneficiaries: 68000 },
-    { id: 'MP', name: 'Madhya Pradesh', repaymentRate: 87, totalAmount: 36000000, beneficiaries: 95000 },
-    { id: 'OD', name: 'Odisha', repaymentRate: 86, totalAmount: 24000000, beneficiaries: 64000 },
-    { id: 'TG', name: 'Telangana', repaymentRate: 93, totalAmount: 31000000, beneficiaries: 78000 },
-    { id: 'PB', name: 'Punjab', repaymentRate: 90, totalAmount: 22000000, beneficiaries: 54000 },
-    { id: 'HR', name: 'Haryana', repaymentRate: 91, totalAmount: 26000000, beneficiaries: 61000 },
-    { id: 'JH', name: 'Jharkhand', repaymentRate: 84, totalAmount: 19000000, beneficiaries: 52000 },
-    { id: 'CT', name: 'Chhattisgarh', repaymentRate: 85, totalAmount: 21000000, beneficiaries: 58000 },
-    { id: 'AS', name: 'Assam', repaymentRate: 83, totalAmount: 18000000, beneficiaries: 49000 },
-    { id: 'HP', name: 'Himachal Pradesh', repaymentRate: 88, totalAmount: 12000000, beneficiaries: 32000 },
-    { id: 'UK', name: 'Uttarakhand', repaymentRate: 89, totalAmount: 14000000, beneficiaries: 36000 },
-    { id: 'JK', name: 'Jammu & Kashmir', repaymentRate: 82, totalAmount: 16000000, beneficiaries: 42000 },
-    { id: 'DL', name: 'Delhi', repaymentRate: 95, totalAmount: 27000000, beneficiaries: 65000 },
-    { id: 'GA', name: 'Goa', repaymentRate: 96, totalAmount: 8000000, beneficiaries: 18000 },
-    { id: 'AR', name: 'Arunachal Pradesh', repaymentRate: 79, totalAmount: 6000000, beneficiaries: 15000 },
-    { id: 'NL', name: 'Nagaland', repaymentRate: 80, totalAmount: 5000000, beneficiaries: 12000 },
-    { id: 'MN', name: 'Manipur', repaymentRate: 81, totalAmount: 5500000, beneficiaries: 14000 },
-    { id: 'MZ', name: 'Mizoram', repaymentRate: 78, totalAmount: 4500000, beneficiaries: 11000 },
-    { id: 'TR', name: 'Tripura', repaymentRate: 82, totalAmount: 7000000, beneficiaries: 17000 },
-    { id: 'ML', name: 'Meghalaya', repaymentRate: 80, totalAmount: 6500000, beneficiaries: 16000 },
-    { id: 'SK', name: 'Sikkim', repaymentRate: 85, totalAmount: 4000000, beneficiaries: 9000 },
-  ];
+
 
   const filteredBeneficiaries = useMemo(() => {
     if (riskFilter === 'All') {
@@ -654,22 +623,7 @@ export default function OfficerDashboard({ activeTab = 'dashboard' }: OfficerDas
         onOpenChange={setIsDialogOpen}
       />
 
-      <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/80">
-        <CardHeader className="pb-6">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-yellow-600 rounded-lg flex items-center justify-center">
-              <MapPin className="h-4 w-4 text-white" />
-            </div>
-            Repayment by State - India Heatmap
-          </CardTitle>
-          <CardDescription className="text-base">
-            Interactive visualization of repayment rates across Indian states. States with higher repayment rates glow brighter.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-2">
-          <IndiaRepaymentHeatmap data={stateRepaymentData} className="w-full" />
-        </CardContent>
-      </Card>
+
 
       <div className="grid grid-cols-1">
         <Card>

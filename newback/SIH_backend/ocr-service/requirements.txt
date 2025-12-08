@@ -14,6 +14,7 @@ requests==2.32.3
 
 # Date Parsing
 python-dateutil==2.9.0
+dateparser==1.2.0
 
 # Environment Variables
 python-dotenv==1.0.1
@@ -28,3 +29,6 @@ numpy==1.26.4
 
 # Validation
 pydantic==2.10.3
+
+# Gemini
+google-generativeai==0.3.2

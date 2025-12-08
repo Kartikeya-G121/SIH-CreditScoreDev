@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 
@@ -21,12 +22,11 @@ public class SchemeController {
     private final SchemeService schemeService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER', 'CHANNEL_PARTNER')")
     public ResponseEntity<ApiResponse<SchemeResponse>> createScheme(
+            @AuthenticationPrincipal Long userId,
             @Valid @RequestBody SchemeRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String createdBy = authentication.getName();
-        SchemeResponse response = schemeService.createScheme(request, createdBy);
+        SchemeResponse response = schemeService.createScheme(request, userId);
         return ResponseEntity.ok(ApiResponse.success("Scheme created successfully", response));
     }
 
@@ -36,10 +36,7 @@ public class SchemeController {
         return ResponseEntity.ok(ApiResponse.success(schemes));
     }
 
-
-
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<SchemeResponse>>> getAllSchemes() {
         List<SchemeResponse> schemes = schemeService.getAllSchemes();
         return ResponseEntity.ok(ApiResponse.success(schemes));
@@ -52,7 +49,7 @@ public class SchemeController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER', 'CHANNEL_PARTNER')")
     public ResponseEntity<ApiResponse<SchemeResponse>> updateScheme(
             @PathVariable Integer id,
             @Valid @RequestBody SchemeRequest request) {
@@ -61,14 +58,14 @@ public class SchemeController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER', 'CHANNEL_PARTNER')")
     public ResponseEntity<ApiResponse<Void>> deleteScheme(@PathVariable Integer id) {
         schemeService.deleteScheme(id);
         return ResponseEntity.ok(ApiResponse.success("Scheme deleted successfully", null));
     }
 
     @PutMapping("/{id}/toggle")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER', 'CHANNEL_PARTNER')")
     public ResponseEntity<ApiResponse<SchemeResponse>> toggleScheme(@PathVariable Integer id) {
         SchemeResponse response = schemeService.toggleScheme(id);
         return ResponseEntity.ok(ApiResponse.success("Scheme toggled", response));
