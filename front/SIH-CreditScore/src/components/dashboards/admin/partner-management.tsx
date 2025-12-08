@@ -433,7 +433,7 @@ export default function PartnerManagement() {
                     )}
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>Close</Button>
-                        <Button onClick={() => handleAction(selectedRequest?.id, 'Approve')}>Approve</Button>
+                        <Button onClick={() => selectedRequest && handleAction(selectedRequest.id, 'Approve')}>Approve</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

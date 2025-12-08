@@ -35,6 +35,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (['admin', 'loan_officer'].includes(parsedUser.role)) {
             parsedUser.role = 'officer';
             localStorage.setItem('credit-assist-user', JSON.stringify(parsedUser));
+          } else if (['channel_partner'].includes(parsedUser.role.toLowerCase())) {
+            parsedUser.role = 'partner';
+            localStorage.setItem('credit-assist-user', JSON.stringify(parsedUser));
           }
           setUser(parsedUser);
         }
@@ -68,7 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: userEmail.split('@')[0], // Fallback name
           email: userEmail,
           avatar: `https://ui-avatars.com/api/?name=${userEmail}`,
-          role: (['admin', 'loan_officer', 'officer'].includes(role.toLowerCase()) ? 'officer' : 'beneficiary') as 'beneficiary' | 'officer',
+          role: (['admin', 'loan_officer', 'officer'].includes(role.toLowerCase())
+            ? 'officer'
+            : ['partner', 'channel_partner'].includes(role.toLowerCase())
+              ? 'partner'
+              : 'beneficiary') as 'beneficiary' | 'officer' | 'partner',
           region: 'National', // Default
         };
 

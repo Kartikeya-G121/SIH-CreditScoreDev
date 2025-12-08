@@ -28,8 +28,9 @@ public class LoanSpecification {
                 Join<User, BeneficiaryProfile> profileJoin = userJoin.join("beneficiaryProfile", JoinType.LEFT);
 
                 Predicate namePredicate = cb.like(cb.lower(profileJoin.get("fullName")), "%" + q + "%");
-                Predicate appIdPredicate = cb.like(cb.lower(root.get("application").get("applicationId").as(String.class)), "%" + q + "%");
-                
+                Predicate appIdPredicate = cb
+                        .like(cb.lower(root.get("application").get("applicationId").as(String.class)), "%" + q + "%");
+
                 predicates.add(cb.or(namePredicate, appIdPredicate));
             }
 
@@ -58,7 +59,14 @@ public class LoanSpecification {
             if (criteria.getMaxAmount() != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("totalPrincipal"), criteria.getMaxAmount()));
             }
-            
+
+            if (StringUtils.hasText(criteria.getProviderName())) {
+                // Join: Loan -> Application -> Scheme -> providerName
+                predicates.add(cb.equal(
+                        root.get("application").get("scheme").get("providerName"),
+                        criteria.getProviderName()));
+            }
+
             if (criteria.getStartDate() != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("startDate"), criteria.getStartDate()));
             }

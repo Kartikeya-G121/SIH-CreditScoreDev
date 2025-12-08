@@ -28,6 +28,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 import { schemeService, Scheme } from '@/services/scheme-service';
 import { Loader2, Plus, Pencil, Trash2, Power, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function SchemeManagement() {
     const { toast } = useToast();
+    const { user } = useAuth();
     const [schemes, setSchemes] = useState<Scheme[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -196,9 +198,12 @@ export default function SchemeManagement() {
                     <h2 className="text-2xl font-bold tracking-tight">Loan Schemes</h2>
                     <p className="text-muted-foreground">Manage loan schemes, eligibility, and terms.</p>
                 </div>
-                <Button onClick={handleCreate}>
-                    <Plus className="mr-2 h-4 w-4" /> Create Scheme
-                </Button>
+                {/* Only Partners can create schemes */}
+                {user?.role === 'partner' && (
+                    <Button onClick={handleCreate}>
+                        <Plus className="mr-2 h-4 w-4" /> Create Scheme
+                    </Button>
+                )}
             </div>
 
             {/* Filters */}

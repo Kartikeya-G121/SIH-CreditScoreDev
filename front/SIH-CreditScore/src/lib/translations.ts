@@ -5,6 +5,7 @@ export const translations = {
     beneficiary: 'Beneficiary',
     officer: 'Officer',
     admin: 'Admin',
+    partner: 'Channel Partner',
 
     // Dashboards
     beneficiary_dashboard: 'Beneficiary Dashboard',
@@ -168,6 +169,7 @@ export const translations = {
     beneficiary: 'लाभार्थी',
     officer: 'अधिकारी',
     admin: 'प्रशासक',
+    partner: 'चैनल पार्टनर',
 
     // Dashboards
     beneficiary_dashboard: 'लाभार्थी डैशबोर्ड',
