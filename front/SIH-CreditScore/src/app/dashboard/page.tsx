@@ -1,4 +1,3 @@
-
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -19,6 +18,7 @@ import { Logo } from '@/components/layout/logo';
 import BeneficiaryDashboard from '@/components/dashboards/beneficiary-dashboard';
 import OfficerDashboard from '@/components/dashboards/officer-dashboard';
 import SchemeManagement from '@/components/dashboards/officer/scheme-management';
+import PartnerManagement from '@/components/dashboards/admin/partner-management';
 
 
 import NotificationsCenter from '@/components/dashboards/notifications-center';
@@ -139,6 +139,11 @@ function DashboardSidebar() {
         id: 'dashboard',
         icon: <LayoutDashboard />,
         label: t('sidebar_dashboard'),
+      },
+      {
+        id: 'partner-management',
+        icon: <Users />,
+        label: 'Partner Management',
       },
       {
         id: 'portfolio',
@@ -306,6 +311,9 @@ export default function DashboardPage() {
         }
         if (tab === 'schemes') {
           return <SchemeManagement />;
+        }
+        if (tab === 'partner-management') {
+          return <PartnerManagement />;
         }
         return <OfficerDashboard activeTab={tab} />;
       default:
