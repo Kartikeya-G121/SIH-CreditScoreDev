@@ -1,44 +1,56 @@
-Risk Score: 21.72 (Low)
+Risk Score: 38.79 (Low)
 ==================================================
 DETAILED RISK ANALYSIS (Sorted by Importance)
 ==================================================
 
-• Current outstanding: DECREASES risk (Impact: 93.87)
-  - Managed outstanding amount (3373) stabilizes risk.
+• On time emis: INCREASES risk (Impact: 97.54)
 
-• Bpl status: DECREASES risk (Impact: 83.93)
+• Current outstanding: DECREASES risk (Impact: 81.23)
+  - Managed outstanding amount (0) stabilizes risk.
 
-• Subsidy amount: DECREASES risk (Impact: 77.70)
+• Annual family income: INCREASES risk (Impact: 67.97)
+  - Income level relative to obligations is a concern.
 
-• On time emis: DECREASES risk (Impact: 64.98)
+• Bpl status: DECREASES risk (Impact: 56.17)
 
-• Missed payments: DECREASES risk (Impact: 42.00)
+• Subsidy amount: DECREASES risk (Impact: 46.85)
 
-• Tenure months: DECREASES risk (Impact: 35.01)
+• Missed payments: DECREASES risk (Impact: 27.80)
 
-• Emis pending: DECREASES risk (Impact: 34.03)
+• Emis pending: DECREASES risk (Impact: 26.27)
 
-• Loan amount: DECREASES risk (Impact: 28.68)
+• Tenure months: DECREASES risk (Impact: 20.45)
 
-• Total emis: DECREASES risk (Impact: 22.50)
+• Late payments: DECREASES risk (Impact: 19.30)
 
-• Average delay days: DECREASES risk (Impact: 19.00)
+• Average delay days: DECREASES risk (Impact: 18.81)
   - Minimal delays observed.
 
-• Max delay days: DECREASES risk (Impact: 6.14)
+• Interest rate: DECREASES risk (Impact: 11.01)
+
+• Max delay days: DECREASES risk (Impact: 9.42)
   - Minimal delays observed.
 
-• Emis paid: DECREASES risk (Impact: 5.46)
+• Emis paid: INCREASES risk (Impact: 7.96)
 
-• Rural urban: INCREASES risk (Impact: 4.77)
+• Rural urban: DECREASES risk (Impact: 5.63)
 
-• Late payments: DECREASES risk (Impact: 4.06)
+• Total emis: DECREASES risk (Impact: 3.71)
 
-• Emi amount: INCREASES risk (Impact: 3.59)
+• Emi amount: DECREASES risk (Impact: 2.77)
 
-• Family size: DECREASES risk (Impact: 0.53)
+• Loan purpose: INCREASES risk (Impact: 1.87)
 
-• Dependents count: INCREASES risk (Impact: 0.09)
+• Loan amount: DECREASES risk (Impact: 1.53)
 
-• Dependency ratio: DECREASES risk (Impact: 0.02)
+• Sector: DECREASES risk (Impact: 1.19)
+
+• Income source: INCREASES risk (Impact: 1.02)
+  - Income level relative to obligations is a concern.
+
+• Dependents count: INCREASES risk (Impact: 0.76)
+
+• Dependency ratio: DECREASES risk (Impact: 0.61)
+
+• Family size: DECREASES risk (Impact: 0.07)
 

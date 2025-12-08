@@ -48,4 +48,12 @@ public class ProfileResponse {
     // Certificate availability flags
     private Boolean hasCasteCertificate;
     private Boolean hasIdentityProof;
+
+    private BigDecimal compositeScore;
+    private OffsetDateTime scoreTimestamp;
+
+    // Insights & Advice
+    private String riskBucket;
+    private String incomeBucket;
+    private java.util.List<String> financialAdvice;
 }

@@ -15,6 +15,11 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.MediaType;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -326,6 +331,45 @@ public class MLModelService {
     public void triggerRetraining() {
         log.info("Model retraining triggered - this is a placeholder");
         // TODO: Implement actual retraining logic
-        // This could involve calling a separate training service or queueing a training job
+    }
+
+    /**
+     * Train Custom Risk Model (V3)
+     */
+    public Map<String, Object> trainCustomRiskModel(org.springframework.web.multipart.MultipartFile file, String priorityConfig) {
+        try {
+            log.info("Sending custom training request to Risk ML API");
+
+            org.springframework.util.MultiValueMap<String, Object> body = new org.springframework.util.LinkedMultiValueMap<>();
+            body.add("file", new org.springframework.core.io.ByteArrayResource(file.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return file.getOriginalFilename();
+                }
+            });
+            body.add("priority_config", priorityConfig);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            HttpEntity<org.springframework.util.MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    riskApiUrl + "/models/train_custom",
+                    requestEntity,
+                    String.class
+            );
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                return objectMapper.readValue(response.getBody(), Map.class);
+            } else {
+                log.error("Training failed: {}", response.getStatusCode());
+                return Map.of("error", "Training failed with status " + response.getStatusCode());
+            }
+
+        } catch (Exception e) {
+            log.error("Error during custom model training: {}", e.getMessage());
+            return Map.of("error", e.getMessage());
+        }
     }
 }

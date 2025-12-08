@@ -127,4 +127,16 @@ public class BeneficiaryProfile extends BaseEntity {
     @Column(name = "is_graduate")
     @Builder.Default
     private Boolean isGraduate = false; // Whether the beneficiary is a graduate
+
+    @Column(name = "risk_bucket", length = 20)
+    private String riskBucket;
+
+    @Column(name = "income_bucket", length = 20)
+    private String incomeBucket;
+
+    @Column(name = "composite_score", precision = 5, scale = 2)
+    private BigDecimal compositeScore;
+
+    @Column(name = "score_timestamp")
+    private java.time.OffsetDateTime scoreTimestamp;
 }

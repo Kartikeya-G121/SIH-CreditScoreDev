@@ -44,6 +44,18 @@ public class MLModelController {
         return ResponseEntity.ok(ApiResponse.success("Retraining triggered successfully", null));
     }
 
+    @PostMapping(value = "/train", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> trainCustomModel(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @RequestParam("priority_config") String priorityConfig) {
+        Map<String, Object> result = mlModelService.trainCustomRiskModel(file, priorityConfig);
+        if (result.containsKey("error")) {
+            return ResponseEntity.badRequest().body(ApiResponse.error((String) result.get("error")));
+        }
+        return ResponseEntity.ok(ApiResponse.success("V3 Model training initiated", result));
+    }
+
     // ============ Flask API Management ============
 
     @GetMapping("/flask/info")

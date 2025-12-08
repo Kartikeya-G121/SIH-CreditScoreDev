@@ -489,8 +489,47 @@ public class BeneficiaryService {
                 .isGraduate(profile.getIsGraduate())
                 .hasCasteCertificate(profile.getCasteCertificateUrl() != null || profile.getCertificateBlob() != null)
                 .hasIdentityProof(profile.getIdentityProofUrl() != null || profile.getIdentityProofBlob() != null)
+                .compositeScore(profile.getCompositeScore())
+                .scoreTimestamp(profile.getScoreTimestamp())
+                .riskBucket(profile.getRiskBucket())
+                .incomeBucket(profile.getIncomeBucket())
+                .financialAdvice(generateFinancialAdvice(profile))
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
                 .build();
+    }
+
+    private List<String> generateFinancialAdvice(BeneficiaryProfile profile) {
+        List<String> advice = new java.util.ArrayList<>();
+        if (profile.getCompositeScore() == null) {
+            advice.add("Complete a loan application to generate your credit score.");
+            return advice;
+        }
+
+        // Risk-based Advice
+        String risk = profile.getRiskBucket();
+        if ("High".equalsIgnoreCase(risk)) {
+            advice.add("Focus on clearing existing periodic dues to improve your risk profile.");
+            advice.add("Avoid taking multiple loans simultaneously.");
+        } else if ("Medium".equalsIgnoreCase(risk)) {
+            advice.add("Maintain your current repayment streaks to reach the Low Risk tier.");
+        } else {
+            advice.add("Excellent! You are eligible for higher loan amounts.");
+        }
+
+        // Income-based Advice
+        String income = profile.getIncomeBucket();
+        if ("Low".equalsIgnoreCase(income)) {
+            advice.add("Consider joining a Joint Liability Group (JLG) to improve approval chances.");
+            advice.add("Look for government schemes supporting micro-enterprises.");
+        } else if ("Medium".equalsIgnoreCase(income)) {
+            advice.add("You might be eligible for direct individual loans.");
+        }
+
+        if (advice.isEmpty()) {
+            advice.add("Maintain consistent financial behavior to keep your score healthy.");
+        }
+
+        return advice;
     }
 }

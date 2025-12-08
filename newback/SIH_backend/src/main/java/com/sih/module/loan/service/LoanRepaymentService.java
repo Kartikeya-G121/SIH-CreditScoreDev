@@ -7,6 +7,7 @@ import com.sih.module.loan.entity.Loan;
 import com.sih.module.loan.entity.Repayment;
 import com.sih.module.loan.repository.LoanRepository;
 import com.sih.module.loan.repository.RepaymentRepository;
+import com.sih.module.scoring.service.ScoringEngineService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class LoanRepaymentService {
     private final LoanTransactionService transactionService;
     private final PenaltyAndAccrualService penaltyAndAccrualService;
     private final RepaymentScheduleService scheduleService;
+    private final ScoringEngineService scoringEngineService;
 
     // --- PAY EMI / OVERDUE ---
 
@@ -198,6 +200,12 @@ public class LoanRepaymentService {
         } catch (Exception e) {
             log.warn("Failed to update penalty/DPD stats for loan {} after payment: {}", loanId, e.getMessage());
             // Don't fail the payment if stats update fails
+        }
+        // 8. Trigger Risk Score Recalculation
+        if (loan.getApplication() != null) {
+            java.util.concurrent.CompletableFuture.runAsync(() -> 
+                scoringEngineService.calculateScore(loan.getApplication().getApplicationId())
+            );
         }
     }
 

@@ -34,8 +34,7 @@ export function MyApplicationsList({ onApplyNew, isAdmin }: MyApplicationsListPr
     const [applications, setApplications] = useState<ApplicationResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
-    const [withdrawId, setWithdrawId] = useState<number | null>(null);
-    const [isWithdrawing, setIsWithdrawing] = useState(false);
+    const [explanationApp, setExplanationApp] = useState<ApplicationResponse | null>(null);
 
     const fetchApplications = async () => {
         try {
@@ -72,6 +71,8 @@ export function MyApplicationsList({ onApplyNew, isAdmin }: MyApplicationsListPr
                 return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Withdrawn</Badge>;
             case 'SANCTIONED':
                 return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Sanctioned</Badge>;
+            case 'AUTO_SANCTIONED':
+                return <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100">Auto Sanctioned</Badge>;
             default:
                 return <Badge variant="secondary">{status}</Badge>;
         }
@@ -106,13 +107,7 @@ export function MyApplicationsList({ onApplyNew, isAdmin }: MyApplicationsListPr
             <GroupLoanDashboard
                 groupId={selectedGroupId}
                 onDraftApplication={() => {
-                    // Logic to edit draft application
-                    // For now, just go back to list or show toast
-                    toast({
-                        title: "Edit Application",
-                        description: "Redirecting to application form...",
-                    });
-                    // In a real flow, we would navigate to the application form with the ID
+                    toast({ title: "Edit Application", description: "Redirecting..." });
                 }}
                 onBack={() => {
                     setSelectedGroupId(null);
@@ -169,7 +164,7 @@ export function MyApplicationsList({ onApplyNew, isAdmin }: MyApplicationsListPr
                                     <TableHead>Type</TableHead>
                                     <TableHead>Amount</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead>Date</TableHead>
+                                    {/* <TableHead>Date</TableHead> */}
                                     <TableHead className="text-right">Action</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -191,8 +186,17 @@ export function MyApplicationsList({ onApplyNew, isAdmin }: MyApplicationsListPr
                                             )}
                                         </TableCell>
                                         <TableCell>₹{app.requestedAmount.toLocaleString()}</TableCell>
-                                        <TableCell>{getStatusBadge(app.status)}</TableCell>
-                                        <TableCell>{new Date(app.createdAt).toLocaleDateString()}</TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                {getStatusBadge(app.status)}
+                                                {(app.status === 'AUTO_SANCTIONED' || app.status === 'SANCTIONED' || app.status === 'REJECTED') && (
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setExplanationApp(app)}>
+                                                        <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        {/* <TableCell>{new Date(app.createdAt).toLocaleDateString()}</TableCell> */}
                                         <TableCell className="text-right">
                                             {app.groupId ? (
                                                 <Button
@@ -213,16 +217,6 @@ export function MyApplicationsList({ onApplyNew, isAdmin }: MyApplicationsListPr
                                                 >
                                                     {app.status === 'DRAFT' ? 'Finalize Draft' : 'View Details'}
                                                     <ArrowRight className="ml-2 h-4 w-4" />
-                                                </Button>
-                                            )}
-                                            {app.status === 'DRAFT' && !app.groupId && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-destructive hover:text-destructive/80 ml-2"
-                                                    onClick={() => setWithdrawId(app.applicationId)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             )}
                                         </TableCell>
@@ -249,15 +243,48 @@ export function MyApplicationsList({ onApplyNew, isAdmin }: MyApplicationsListPr
                             disabled={isWithdrawing}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {isWithdrawing ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Withdrawing...
-                                </>
-                            ) : (
-                                'Withdraw Application'
-                            )}
+                            {isWithdrawing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Withdraw Application'}
                         </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Explanation Dialog */}
+            <AlertDialog open={!!explanationApp} onOpenChange={(open) => !open && setExplanationApp(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Application Decision: {explanationApp?.status === 'REJECTED' ? 'Rejected' : 'Sanctioned'}</AlertDialogTitle>
+                        <div className="py-4 space-y-4">
+                            {explanationApp?.status === 'AUTO_SANCTIONED' && (
+                                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <h4 className="font-semibold text-green-800 mb-1">Auto-Sanctioned by AI</h4>
+                                    <p className="text-sm text-green-700">{explanationApp.autoSanctionReason || "Your profile met all the criteria for an instant approval."}</p>
+                                </div>
+                            )}
+                            {explanationApp?.status === 'REJECTED' && (
+                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                                    <h4 className="font-semibold text-red-800 mb-1">Reason for Rejection</h4>
+                                    <p className="text-sm text-red-700">{explanationApp.rejectionReason || "Application did not meet the required credit parameters."}</p>
+                                </div>
+                            )}
+                            {explanationApp?.status === 'SANCTIONED' && !explanationApp.autoSanctionReason && (
+                                <p className="text-sm text-muted-foreground">This application was manually reviewed and sanctioned by a Loan Officer.</p>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span className="text-muted-foreground block">Income Bucket</span>
+                                    <span className="font-medium">{explanationApp?.incomeBucket || "N/A"}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block">Risk Bucket</span>
+                                    <span className="font-medium">{explanationApp?.riskBucket || "N/A"}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Close</AlertDialogCancel>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

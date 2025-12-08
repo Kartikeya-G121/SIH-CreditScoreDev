@@ -9,6 +9,7 @@ import com.sih.module.consumption.dto.*;
 import com.sih.module.consumption.entity.ConsumptionEntry;
 import com.sih.module.consumption.repository.ConsumptionEntryRepository;
 import com.sih.module.beneficiary.service.SupabaseStorageService;
+import com.sih.module.scoring.service.ScoringEngineService;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.scheduling.annotation.Async;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class ConsumptionService {
     private final SupabaseStorageService supabaseStorageService;
     private final OcrService ocrService;
     private final BbpsService bbpsService;
+    private final ScoringEngineService scoringEngineService;
 
     public List<ConsumptionEntryResponse> uploadBatch(Long userId, MultipartFile[] files, String dataSource) {
         List<ConsumptionEntryResponse> responses = new ArrayList<>();
@@ -185,6 +187,11 @@ public class ConsumptionService {
 
             entryRepository.save(entry);
             log.info("Verification completed for entry: {}, Status: {}", entryId, entry.getVerificationStatus());
+
+            // 3. Trigger Score Recalculation (Income Model)
+            if (entry.getVerificationStatus().equals("VERIFIED")) {
+               scoringEngineService.recalculateScoreForUser(entry.getUser().getUserId());
+            }
 
         } catch (Exception e) {
             log.error("Error during async verification for entry: {}", entryId, e);

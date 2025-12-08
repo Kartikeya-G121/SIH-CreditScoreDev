@@ -73,4 +73,23 @@ public class LoanApplication extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sanctioned_by")
     private User sanctionedBy;
+
+    // --- Scoring Fields ---
+    @Column(name = "risk_score", precision = 5, scale = 2)
+    private BigDecimal riskScore;
+
+    @Column(name = "risk_bucket", length = 20)
+    private String riskBucket;
+
+    @Column(name = "income_bucket", length = 20)
+    private String incomeBucket;
+
+    @Column(name = "income_confidence", precision = 5, scale = 2)
+    private BigDecimal incomeConfidence;
+
+    @Column(name = "credit_score_composite", length = 20)
+    private String creditScoreComposite;
+
+    @Column(name = "auto_sanction_reason", columnDefinition = "TEXT")
+    private String autoSanctionReason;
 }

@@ -30,6 +30,7 @@ import {
     WifiOff,
     ArrowRightLeft
 } from 'lucide-react';
+import CustomTrainingSection from './custom-training-section';
 
 export default function MLModelsManagement() {
     const { toast } = useToast();
@@ -415,6 +416,9 @@ export default function MLModelsManagement() {
                     Refresh Data
                 </Button>
             </div>
+
+            {/* Custom Training Section (V3) */}
+            <CustomTrainingSection />
         </div>
     );
 }

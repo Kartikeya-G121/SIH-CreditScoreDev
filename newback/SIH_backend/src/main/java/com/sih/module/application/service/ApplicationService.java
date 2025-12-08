@@ -18,6 +18,7 @@ import com.sih.module.scheme.entity.LoanScheme;
 import com.sih.module.scheme.repository.LoanSchemeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.sih.module.scoring.service.ScoringEngineService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class ApplicationService {
 
     private final LoanApplicationRepository applicationRepository;
+    private final ScoringEngineService scoringEngineService;
     private final UserRepository userRepository;
     private final BorrowerGroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
@@ -219,7 +221,11 @@ public class ApplicationService {
 
         // Fail-safe: Auto-trigger scoring if enabled, otherwise manual review
         try {
-            // TODO: Trigger scoring engine asynchronously
+            // Trigger scoring engine asynchronously
+            java.util.concurrent.CompletableFuture.runAsync(() ->
+                    scoringEngineService.calculateScore(applicationId)
+            );
+
             // For now, move to SCORING status
             application.setStatus("SCORING");
             applicationRepository.save(application);
@@ -478,6 +484,9 @@ public class ApplicationService {
                 .sanctionedBy(application.getSanctionedBy() != null ? application.getSanctionedBy().getUserId() : null)
                 .createdAt(application.getCreatedAt())
                 .updatedAt(application.getUpdatedAt())
+                .riskBucket(application.getRiskBucket())
+                .incomeBucket(application.getIncomeBucket())
+                .autoSanctionReason(application.getAutoSanctionReason())
                 .build();
     }
 }

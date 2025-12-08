@@ -137,12 +137,12 @@ bbps:
 ml:
   risk:
     api:
-      url: ${ML_RISK_API_URL:http://localhost:5001}
+      url: ${ML_RISK_API_URL:http://localhost:5001/predict}
     model:
       version: ${ML_RISK_MODEL_VERSION:v1}
   income:
     api:
-      url: ${ML_INCOME_API_URL:http://localhost:5002}
+      url: ${ML_INCOME_API_URL:http://localhost:5002/predict}
 
 # Logging
 logging:

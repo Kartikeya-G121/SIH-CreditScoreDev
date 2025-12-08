@@ -28,4 +28,9 @@ public class ApplicationResponse {
     private Long sanctionedBy;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    
+    // Scoring Details
+    private String riskBucket;
+    private String incomeBucket;
+    private String autoSanctionReason;
 }

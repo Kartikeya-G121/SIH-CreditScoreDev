@@ -246,7 +246,7 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
 
   // Data from mock — keep these local so component is testable without backend.
   const {
-    creditScore = 0,
+    creditScore: mockCreditScore = 0,
     riskLevel = 'Unknown',
     insights = [],
     repaymentSchedule = [],
@@ -258,11 +258,19 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
     applicationJourney = [],
   } = MOCK_BENEFICIARY_DATA;
 
+  // Use real composite score if available, otherwise mock
+  const creditScore = profileData?.compositeScore ?? mockCreditScore;
+
   // scorePercentage (0-100)
   const scorePercentage = useMemo(() => {
+    // If real score (0-100), usage is direct. If mock (0-1000), scale it.
+    // Assuming backend returns 0-100.
+    if (profileData?.compositeScore !== undefined) {
+      return Number(profileData.compositeScore);
+    }
     const raw = Number(creditScore) / 1000 * 100;
     return Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : 0;
-  }, [creditScore]);
+  }, [creditScore, profileData?.compositeScore]);
 
   // memoize formatted repayment schedule if heavy
   const formattedRepayments = useMemo(() => repaymentSchedule.map(p => ({ ...p })), [repaymentSchedule]);
@@ -406,14 +414,14 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
                           {scoreSummary?.label ?? 'Confident Low Risk'}
                         </h2>
                         <p className="text-lg text-white/95 leading-relaxed max-w-md font-medium">
-                          {scoreSummary?.opportunity ?? 'Eligible for ₹2,00,000 micro-loan'}
+                          {profileData?.riskBucket ? `${profileData.riskBucket} Risk Profile` : 'Eligible for ₹2,00,000 micro-loan'}
                         </p>
                       </div>
 
                       <div className="flex items-center gap-4 flex-wrap">
                         <Badge className="bg-white/30 hover:bg-white/40 text-white border-white/40 backdrop-blur-md px-4 py-1.5 text-sm font-semibold shadow-lg">
                           <ShieldCheck className="w-4 h-4 mr-1.5" />
-                          {riskLevel}
+                          {profileData?.riskBucket ?? riskLevel}
                         </Badge>
                         <div className="text-sm text-white/80">
                           Last updated: <span className="font-medium">{scoreSummary?.updatedAt ?? 'Updated 2 hrs ago'}</span>
@@ -680,8 +688,13 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
               <CardDescription>{safeT(t, 'personalized_tips', '')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {financialAdvice.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No advice available right now.</p>
+              {(profileData?.financialAdvice && profileData.financialAdvice.length > 0) ? (
+                profileData.financialAdvice.map((advice: string, index: number) => (
+                  <div key={index} className="flex items-start space-x-4 rounded-lg border p-4 transition-all hover:shadow-md hover:bg-muted/50">
+                    <div className="flex-shrink-0 pt-1"><Lightbulb className="h-6 w-6 text-primary" /></div>
+                    <div><h3 className="font-semibold">Recommendation #{index + 1}</h3><p className="text-sm text-muted-foreground">{advice}</p></div>
+                  </div>
+                ))
               ) : (
                 financialAdvice.map(item => (
                   <div key={item.id} className="flex items-start space-x-4 rounded-lg border p-4 transition-all hover:shadow-md hover:bg-muted/50">

@@ -32,6 +32,8 @@ export interface BeneficiaryProfile {
     landOwned?: number;
     incomeSource?: string;
     isGraduate?: boolean;
+    compositeScore?: number;
+    scoreTimestamp?: string;
     createdAt: string;
     updatedAt: string;
 }

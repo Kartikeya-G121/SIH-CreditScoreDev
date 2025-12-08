@@ -95,4 +95,15 @@ export const scoringService = {
             method: 'POST',
         });
     },
+
+    trainCustomModel: async (file: File, priorityConfig: string[]): Promise<any> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('priority_config', JSON.stringify(priorityConfig));
+
+        return fetchFromApi('/ml-models/train', {
+            method: 'POST',
+            body: formData,
+        });
+    },
 };
