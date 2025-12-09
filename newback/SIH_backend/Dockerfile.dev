@@ -4,5 +4,5 @@ COPY pom.xml .
 # Go offline to cache dependencies
 RUN mvn dependency:go-offline
 COPY src ./src
-# Run with devtools and remote debugging enabled
-CMD ["mvn", "spring-boot:run", "-Dspring-boot.run.jvmArguments='-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'"]
+# Run with devtools and remote debugging enabled, skip tests
+CMD ["mvn", "spring-boot:run", "-DskipTests", "-Dspring-boot.run.jvmArguments='-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005'"]

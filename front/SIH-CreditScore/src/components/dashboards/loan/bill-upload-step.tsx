@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Upload, FileText, CheckCircle2, AlertCircle, Zap, Flame, Smartphone, Trash2, RefreshCw } from 'lucide-react';
+import { BillManualInputDialog } from './bill-manual-input-dialog';
 import { consumptionService } from '@/services/consumption-service';
 import { BillCategory, ConsumptionEntry } from '@/types/loan-application-types';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +25,9 @@ export function BillUploadStep({ onNext, onBack, applicationId, referenceDate }:
     const [uploadingCategory, setUploadingCategory] = useState<string | null>(null);
     const [billsByCategory, setBillsByCategory] = useState<Map<BillCategory, ConsumptionEntry[]>>(new Map());
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [pendingUploads, setPendingUploads] = useState<{ files: File[], category: string } | null>(null);
+    const [currentFileIndex, setCurrentFileIndex] = useState(0);
+    const [manualInputData, setManualInputData] = useState<{ amount: number, date: string }[]>([]);
 
     // Fetch existing bills on mount
     useEffect(() => {
@@ -51,8 +55,38 @@ export function BillUploadStep({ onNext, onBack, applicationId, referenceDate }:
         const files = event.target.files;
         if (!files || files.length === 0) return;
 
+        // Store files and start manual input flow
+        setPendingUploads({ files: Array.from(files), category });
+        setCurrentFileIndex(0);
+        setManualInputData([]);
+
+        // Reset input
+        event.target.value = '';
+    };
+
+    const handleManualInputSubmit = (amount: number, date: string) => {
+        if (!pendingUploads) return;
+
+        const newData = [...manualInputData, { amount, date }];
+        setManualInputData(newData);
+
+        const nextIndex = currentFileIndex + 1;
+
+        if (nextIndex < pendingUploads.files.length) {
+            // Move to next file
+            setCurrentFileIndex(nextIndex);
+        } else {
+            // All files have data, proceed with upload
+            performUpload(pendingUploads.files, pendingUploads.category, newData);
+        }
+    };
+
+    const performUpload = async (files: File[], category: string, inputData: { amount: number, date: string }[]) => {
         setUploadingCategory(category);
         setUploadProgress(0);
+        setPendingUploads(null);
+        setCurrentFileIndex(0);
+        setManualInputData([]);
 
         // Simulate progress
         const interval = setInterval(() => {
@@ -66,8 +100,10 @@ export function BillUploadStep({ onNext, onBack, applicationId, referenceDate }:
         }, 200);
 
         try {
-            const fileList = Array.from(files);
-            await consumptionService.uploadBillBatch(fileList, category);
+            const amounts = inputData.map(d => d.amount);
+            const dates = inputData.map(d => d.date);
+
+            await consumptionService.uploadBillBatch(files, category, amounts, dates);
 
             setUploadProgress(100);
             toast({
@@ -88,8 +124,6 @@ export function BillUploadStep({ onNext, onBack, applicationId, referenceDate }:
             clearInterval(interval);
             setUploadingCategory(null);
             setUploadProgress(0);
-            // Reset input
-            event.target.value = '';
         }
     };
 
@@ -239,6 +273,23 @@ export function BillUploadStep({ onNext, onBack, applicationId, referenceDate }:
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Manual Input Dialog */}
+            {pendingUploads && (
+                <BillManualInputDialog
+                    open={!!pendingUploads}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setPendingUploads(null);
+                            setCurrentFileIndex(0);
+                            setManualInputData([]);
+                        }
+                    }}
+                    fileName={pendingUploads.files[currentFileIndex]?.name || ''}
+                    categoryName={consumptionService.getCategoryDisplayName(pendingUploads.category as BillCategory)}
+                    onSubmit={handleManualInputSubmit}
+                />
+            )}
         </div>
     );
 }

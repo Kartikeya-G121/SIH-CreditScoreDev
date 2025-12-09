@@ -52,7 +52,7 @@ export function SchemesDashboard() {
         interestRate: '',
     });
 
-    const isAdmin = user?.role === 'officer';
+    const isAdmin = user?.role === 'LOAN_OFFICER' || user?.role === 'ADMIN';
 
     const fetchSchemes = async () => {
         try {

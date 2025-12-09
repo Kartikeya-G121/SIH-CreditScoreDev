@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ArrowLeft, ArrowRight, Upload, X, FileText, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
+import { BillManualInputDialog } from './bill-manual-input-dialog';
 import { consumptionService } from '@/services/consumption-service';
 import { loanApplicationService } from '@/services/loan-application-service';
 import { BillCategory, ConsumptionEntry } from '@/types/loan-application-types';
@@ -31,10 +32,16 @@ interface ConsumptionUploadStepProps {
     isGroupLoan?: boolean;
 }
 
+interface BillWithManualInput {
+    file: File;
+    amount: number | null;
+    date: string | null;
+}
+
 interface CategoryBillsState {
     category: BillCategory;
     existingBills: ConsumptionEntry[];
-    uploadedFiles: File[];
+    uploadedFiles: BillWithManualInput[];
 }
 
 // Upload limits per category as per requirements
@@ -54,6 +61,11 @@ export function ConsumptionUploadStep({ applicationId, onBack, onNext, isGroupLo
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [categoryStates, setCategoryStates] = useState<CategoryBillsState[]>([]);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [currentInputDialog, setCurrentInputDialog] = useState<{
+        category: BillCategory;
+        fileIndex: number;
+        fileName: string;
+    } | null>(null);
 
     useEffect(() => {
         const fetchBills = async () => {
@@ -115,7 +127,7 @@ export function ConsumptionUploadStep({ applicationId, onBack, onNext, isGroupLo
 
             if (remainingSlots <= 0) return state;
 
-            const filesToAdd: File[] = [];
+            const filesToAdd: BillWithManualInput[] = [];
 
             Array.from(files).forEach(file => {
                 if (filesToAdd.length >= remainingSlots) return;
@@ -139,7 +151,11 @@ export function ConsumptionUploadStep({ applicationId, onBack, onNext, isGroupLo
                     return;
                 }
 
-                filesToAdd.push(file);
+                filesToAdd.push({
+                    file,
+                    amount: null,
+                    date: null
+                });
             });
 
             if (filesToAdd.length < files.length && files.length > remainingSlots) {
@@ -149,11 +165,52 @@ export function ConsumptionUploadStep({ applicationId, onBack, onNext, isGroupLo
                 });
             }
 
+            // Open input dialog for first new file
+            if (filesToAdd.length > 0) {
+                setCurrentInputDialog({
+                    category,
+                    fileIndex: state.uploadedFiles.length,
+                    fileName: filesToAdd[0].file.name
+                });
+            }
+
             return {
                 ...state,
                 uploadedFiles: [...state.uploadedFiles, ...filesToAdd],
             };
         }));
+    };
+
+    const handleManualInputSubmit = (amount: number, date: string) => {
+        if (!currentInputDialog) return;
+
+        setCategoryStates(prev => prev.map(state => {
+            if (state.category !== currentInputDialog.category) return state;
+
+            const updatedFiles = [...state.uploadedFiles];
+            updatedFiles[currentInputDialog.fileIndex] = {
+                ...updatedFiles[currentInputDialog.fileIndex],
+                amount,
+                date
+            };
+
+            return { ...state, uploadedFiles: updatedFiles };
+        }));
+
+        // Move to next file if available
+        const nextIndex = currentInputDialog.fileIndex + 1;
+        const categoryState = categoryStates.find(s => s.category === currentInputDialog.category);
+
+        if (categoryState && nextIndex < categoryState.uploadedFiles.length &&
+            !categoryState.uploadedFiles[nextIndex].amount) {
+            setCurrentInputDialog({
+                ...currentInputDialog,
+                fileIndex: nextIndex,
+                fileName: categoryState.uploadedFiles[nextIndex].file.name
+            });
+        } else {
+            setCurrentInputDialog(null);
+        }
     };
 
     const handleRemoveFile = (category: BillCategory, fileIndex: number) => {
@@ -169,25 +226,45 @@ export function ConsumptionUploadStep({ applicationId, onBack, onNext, isGroupLo
 
     const handleConfirmSubmit = async () => {
         setShowConfirmDialog(false);
+
+        // Validate all files have manual input
+        const invalidCategories = categoryStates.filter(state =>
+            state.uploadedFiles.some(bill => !bill.amount || !bill.date)
+        );
+
+        if (invalidCategories.length > 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Incomplete Information',
+                description: 'Please enter amount and date for all uploaded bills.',
+            });
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
-            // 1. Upload all new files by category
+            // Upload all new files with manual data by category
             const uploadPromises = categoryStates
                 .filter(state => state.uploadedFiles.length > 0)
-                .map(state =>
-                    consumptionService.uploadBillBatch(
-                        state.uploadedFiles,
+                .map(state => {
+                    const files = state.uploadedFiles.map(b => b.file);
+                    const amounts = state.uploadedFiles.map(b => b.amount!);
+                    const dates = state.uploadedFiles.map(b => b.date!);
+
+                    return consumptionService.uploadBillBatch(
+                        files,
                         state.category,
-                        applicationId
-                    )
-                );
+                        amounts,
+                        dates
+                    );
+                });
 
             if (uploadPromises.length > 0) {
                 await Promise.all(uploadPromises);
             }
 
-            // 2. Proceed to next step (Review)
+            // Proceed to next step (Review)
             onNext();
         } catch (error) {
             console.error('Failed to upload bills:', error);
@@ -298,11 +375,37 @@ export function ConsumptionUploadStep({ applicationId, onBack, onNext, isGroupLo
                                     {/* Upload Area */}
                                     <div className="flex flex-wrap gap-2">
                                         {/* Uploaded Files */}
-                                        {state.uploadedFiles.map((file, idx) => (
+                                        {state.uploadedFiles.map((billData, idx) => (
                                             <div key={idx} className="relative flex flex-col justify-center p-2 bg-blue-50 border border-blue-100 rounded text-xs w-28 h-24 group">
-                                                <div className="font-medium truncate" title={file.name}>{file.name}</div>
-                                                <div className="text-blue-600">{(file.size / 1024).toFixed(0)} KB</div>
-                                                <Badge className="mt-1 w-fit text-[10px] bg-blue-100 text-blue-700 hover:bg-blue-200 border-0">New</Badge>
+                                                <div className="font-medium truncate" title={billData.file.name}>
+                                                    {billData.file.name}
+                                                </div>
+
+                                                {billData.amount && billData.date ? (
+                                                    <>
+                                                        <div className="text-blue-600 font-semibold">₹{billData.amount}</div>
+                                                        <div className="text-blue-500 text-[10px]">
+                                                            {new Date(billData.date).toLocaleDateString()}
+                                                        </div>
+                                                        <Badge className="mt-1 w-fit text-[10px] bg-green-100 text-green-700 hover:bg-green-200 border-0">
+                                                            Ready
+                                                        </Badge>
+                                                    </>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="mt-1 h-6 text-[10px]"
+                                                        onClick={() => setCurrentInputDialog({
+                                                            category: state.category,
+                                                            fileIndex: idx,
+                                                            fileName: billData.file.name
+                                                        })}
+                                                    >
+                                                        Enter Details
+                                                    </Button>
+                                                )}
+
                                                 <button
                                                     onClick={() => handleRemoveFile(state.category, idx)}
                                                     className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
@@ -408,6 +511,17 @@ export function ConsumptionUploadStep({ applicationId, onBack, onNext, isGroupLo
                     )}
                 </Button>
             </div>
+
+            {/* Manual Input Dialog */}
+            {currentInputDialog && (
+                <BillManualInputDialog
+                    open={!!currentInputDialog}
+                    onOpenChange={(open) => !open && setCurrentInputDialog(null)}
+                    fileName={currentInputDialog.fileName}
+                    categoryName={consumptionService.getCategoryDisplayName(currentInputDialog.category)}
+                    onSubmit={handleManualInputSubmit}
+                />
+            )}
         </div>
     );
 }

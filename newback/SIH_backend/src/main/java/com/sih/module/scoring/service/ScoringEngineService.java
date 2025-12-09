@@ -18,8 +18,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.OptionalDouble;
 
 @Service
@@ -30,6 +28,8 @@ public class ScoringEngineService {
     private final LoanApplicationRepository loanApplicationRepository;
     private final BeneficiaryProfileRepository beneficiaryProfileRepository;
     private final ConsumptionEntryRepository consumptionEntryRepository;
+    private final com.sih.module.loan.repository.LoanRepository loanRepository;
+    private final com.sih.module.loan.repository.RepaymentRepository repaymentRepository;
     
     // Instantiate directly if no bean is configured
     private final RestTemplate restTemplate = new RestTemplate();
@@ -86,6 +86,9 @@ public class ScoringEngineService {
         // 4. Determine Final Status (Composite Logic)
         determineFinalStatus(application);
 
+        // 5. Update Beneficiary Profile with latest scores
+        updateBeneficiaryProfile(profile, application);
+
         loanApplicationRepository.save(application);
         log.info("Scoring completed for application ID: {}", applicationId);
     }
@@ -139,6 +142,9 @@ public class ScoringEngineService {
     }
 
     private RiskModelInput prepareRiskPayload(BeneficiaryProfile profile, LoanApplication app) {
+        // Calculate actual repayment metrics from user's loan history
+        RepaymentMetrics metrics = calculateRepaymentMetrics(profile.getUser().getUserId());
+        
         return RiskModelInput.builder()
                 .beneficiaryId("BEN_" + profile.getProfileId())
                 .age(calculateAge(profile))
@@ -153,9 +159,9 @@ public class ScoringEngineService {
                 .tenure_months(app.getTenureMonths())
                 .interest_rate(0.0) // Default 0.0 since not yet sanctioned
                 .emi_amount(0.0)    // Default 0.0
-                .late_payments(0) // Default for new users
-                .missed_payments(0)
-                .average_delay_days(0.0)
+                .late_payments(metrics.getLatePayments())
+                .missed_payments(metrics.getMissedPayments())
+                .average_delay_days(metrics.getAverageDelayDays())
                 .build();
     }
 
@@ -268,5 +274,137 @@ public class ScoringEngineService {
         double finalScore = weightedScore * 100.0;
         
         return BigDecimal.valueOf(finalScore).setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Updates the beneficiary profile with the latest scoring results.
+     * This ensures the user's dashboard shows current risk/income assessment.
+     */
+    private void updateBeneficiaryProfile(BeneficiaryProfile profile, LoanApplication application) {
+        try {
+            // Extract composite score from application
+            if (application.getCreditScoreComposite() != null) {
+                BigDecimal compositeScore = new BigDecimal(application.getCreditScoreComposite());
+                profile.setCompositeScore(compositeScore);
+                profile.setScoreTimestamp(java.time.OffsetDateTime.now());
+            }
+            
+            // Update risk and income buckets
+            if (application.getRiskBucket() != null) {
+                profile.setRiskBucket(application.getRiskBucket());
+            }
+            
+            if (application.getIncomeBucket() != null) {
+                profile.setIncomeBucket(application.getIncomeBucket());
+            }
+            
+            beneficiaryProfileRepository.save(profile);
+            log.info("Updated beneficiary profile {} with composite score: {}, risk: {}, income: {}", 
+                    profile.getProfileId(), 
+                    profile.getCompositeScore(), 
+                    profile.getRiskBucket(), 
+                    profile.getIncomeBucket());
+        } catch (Exception e) {
+            log.error("Failed to update beneficiary profile with scoring results", e);
+            // Don't throw - scoring should still complete even if profile update fails
+        }
+    }
+
+    /**
+     * Calculates repayment metrics from user's entire loan history.
+     * Used to provide accurate data to the Risk ML model.
+     */
+    private RepaymentMetrics calculateRepaymentMetrics(Long userId) {
+        try {
+            // Fetch all loans for this user (including historical/closed loans)
+            List<com.sih.module.loan.entity.Loan> userLoans = 
+                loanRepository.findByUserUserId(userId);
+            
+            if (userLoans.isEmpty()) {
+                // New user with no loan history - return zeros
+                return RepaymentMetrics.builder()
+                    .totalEmis(0)
+                    .paidEmis(0)
+                    .latePayments(0)
+                    .missedPayments(0)
+                    .averageDelayDays(0.0)
+                    .build();
+            }
+            
+            int totalEmis = 0;
+            int paidEmis = 0;
+            int latePayments = 0;
+            int missedPayments = 0;
+            int totalDelayDays = 0;
+            
+            for (com.sih.module.loan.entity.Loan loan : userLoans) {
+                // Count total EMIs from original tenure
+                if (loan.getOriginalTenureMonths() != null) {
+                    totalEmis += loan.getOriginalTenureMonths();
+                }
+                
+                // Fetch all repayments for this loan
+                List<com.sih.module.loan.entity.Repayment> repayments = 
+                    repaymentRepository.findByLoanLoanId(loan.getLoanId());
+                
+                for (com.sih.module.loan.entity.Repayment r : repayments) {
+                    String status = r.getStatus();
+                    
+                    // Count paid EMIs (completed or fully paid)
+                    if (java.util.Set.of("COMPLETED", "PAID").contains(status)) {
+                        paidEmis++;
+                        
+                        // Check if payment was late
+                        if (Boolean.FALSE.equals(r.getIsOnTime()) && r.getDelayDays() != null) {
+                            latePayments++;
+                            totalDelayDays += r.getDelayDays();
+                        }
+                    } 
+                    // Count missed/failed payments
+                    else if (java.util.Set.of("FAILED", "DEFAULTED").contains(status)) {
+                        missedPayments++;
+                    }
+                    // Count overdue as missed if beyond grace period (30 days)
+                    else if ("OVERDUE".equals(status) && r.getDueDate() != null) {
+                        long daysPastDue = java.time.temporal.ChronoUnit.DAYS.between(
+                            r.getDueDate(), 
+                            java.time.LocalDate.now()
+                        );
+                        if (daysPastDue > 30) {
+                            missedPayments++;
+                        }
+                    }
+                }
+            }
+            
+            // Calculate average delay
+            double avgDelay = latePayments > 0 
+                ? (double) totalDelayDays / latePayments 
+                : 0.0;
+            
+            RepaymentMetrics metrics = RepaymentMetrics.builder()
+                .totalEmis(totalEmis)
+                .paidEmis(paidEmis)
+                .latePayments(latePayments)
+                .missedPayments(missedPayments)
+                .averageDelayDays(avgDelay)
+                .build();
+            
+            log.info("Calculated repayment metrics for user {}: Total EMIs={}, Paid={}, Late={}, Missed={}, Avg Delay={} days", 
+                    userId, totalEmis, paidEmis, latePayments, missedPayments, avgDelay);
+            
+            return metrics;
+            
+        } catch (Exception e) {
+            log.error("Failed to calculate repayment metrics for user {}: {}", userId, e.getMessage());
+            // Return zeros on error to prevent scoring failure
+            return RepaymentMetrics.builder()
+                .totalEmis(0)
+                .paidEmis(0)
+                .latePayments(0)
+                .missedPayments(0)
+                .averageDelayDays(0.0)
+                .build();
+        }
     }
 }

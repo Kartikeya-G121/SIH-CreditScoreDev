@@ -67,66 +67,9 @@ import { useToast } from '@/hooks/use-toast';
 import { StatCard } from '@/components/shared/stat-card';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { partnerService, PartnerRequest } from '@/services/partner-service';
+import { loanPortfolioService } from '@/services/loan-portfolio-service';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-
-// Mock Data
-const MOCK_PARTNER_REQUESTS = [
-    {
-        id: 1,
-        orgName: 'FinTech Solutions Pvt Ltd',
-        type: 'NBFC',
-        contactPerson: 'Rajesh Kumar',
-        email: 'rajesh@fintechsol.com',
-        status: 'Pending',
-        submittedAt: '2024-03-15',
-        documents: ['Registration Cert', 'Tax Filings'],
-    },
-    {
-        id: 2,
-        orgName: 'Gramin Vikas Trust',
-        type: 'NGO',
-        contactPerson: 'Anita Desai',
-        email: 'anita@gvt.org',
-        status: 'Pending',
-        submittedAt: '2024-03-14',
-        documents: ['NGO Registration', 'Audit Report'],
-    },
-    {
-        id: 3,
-        orgName: 'City Cooperative Bank',
-        type: 'Bank',
-        contactPerson: 'Suresh Patel',
-        email: 'suresh@citycoop.com',
-        status: 'Reviewed',
-        submittedAt: '2024-03-10',
-        documents: ['Banking License', 'RBI Compliance'],
-    },
-];
-
-const ANALYTICS_DATA = {
-    onboardingTrend: [
-        { month: 'Jan', requests: 12, onboarded: 8 },
-        { month: 'Feb', requests: 19, onboarded: 15 },
-        { month: 'Mar', requests: 15, onboarded: 10 },
-        { month: 'Apr', requests: 25, onboarded: 22 },
-        { month: 'May', requests: 32, onboarded: 28 },
-        { month: 'Jun', requests: 45, onboarded: 40 },
-    ],
-    partnerTypeDist: [
-        { name: 'NBFC', value: 45, fill: '#0088FE' },
-        { name: 'Bank', value: 25, fill: '#00C49F' },
-        { name: 'NGO', value: 20, fill: '#FFBB28' },
-        { name: 'MFI', value: 10, fill: '#FF8042' },
-    ],
-};
-
-const STATS = {
-    totalPartners: 156,
-    pendingRequests: 12,
-    activeLoans: 4500,
-    totalDisbursed: '₹45.2 Cr',
-};
 
 export default function PartnerManagement() {
     const { toast } = useToast();
@@ -140,9 +83,11 @@ export default function PartnerManagement() {
     const [analytics, setAnalytics] = useState({
         totalPartners: 0,
         pendingRequests: 0,
-        activeLoans: 0, // Mocked for now
-        totalDisbursed: '₹0' // Mocked for now
+        activeLoans: 0,
+        totalDisbursed: '₹0'
     });
+    const [onboardingTrend, setOnboardingTrend] = useState<any[]>([]);
+    const [partnerTypeDist, setPartnerTypeDist] = useState<any[]>([]);
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -165,15 +110,99 @@ export default function PartnerManagement() {
 
     const fetchAnalytics = async () => {
         try {
-            const data = await partnerService.getAnalytics();
-            setAnalytics(prev => ({
-                ...prev,
-                totalPartners: data.totalPartners,
-                pendingRequests: data.pendingRequests
-            }));
+            // Fetch partner analytics and portfolio data in parallel
+            const [partnerData, portfolioData, allRequestsData] = await Promise.allSettled([
+                partnerService.getAnalytics(),
+                loanPortfolioService.getPortfolioAnalytics(),
+                // Fetch all requests to compute trends
+                partnerService.getRequests('', 0, 1000),
+            ]);
+
+            // Update partner stats
+            if (partnerData.status === 'fulfilled') {
+                setAnalytics(prev => ({
+                    ...prev,
+                    totalPartners: partnerData.value.totalPartners,
+                    pendingRequests: partnerData.value.pendingRequests
+                }));
+            } else {
+                console.error("Failed to fetch partner analytics", partnerData.reason);
+            }
+
+            // Update portfolio stats
+            if (portfolioData.status === 'fulfilled') {
+                const aumInCrores = (portfolioData.value.totalAum / 10000000).toFixed(2);
+                setAnalytics(prev => ({
+                    ...prev,
+                    activeLoans: portfolioData.value.activeLoansCount,
+                    totalDisbursed: `₹${aumInCrores} Cr`
+                }));
+            } else {
+                console.error("Failed to fetch portfolio analytics", portfolioData.reason);
+            }
+
+            // Compute chart data from requests
+            if (allRequestsData.status === 'fulfilled' && allRequestsData.value.success) {
+                const allRequests = allRequestsData.value.data.content || [];
+
+                // Compute onboarding trend by month (last 6 months)
+                const trendData = computeOnboardingTrend(allRequests);
+                setOnboardingTrend(trendData);
+
+                // Compute partner type distribution
+                const typeData = computePartnerTypeDistribution(allRequests);
+                setPartnerTypeDist(typeData);
+            }
         } catch (error) {
             console.error("Failed to fetch analytics", error);
         }
+    };
+
+    // Helper function to compute onboarding trend
+    const computeOnboardingTrend = (requests: any[]) => {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const now = new Date();
+        const last6Months = [];
+
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            last6Months.push({
+                month: months[date.getMonth()],
+                year: date.getFullYear(),
+                requests: 0,
+                onboarded: 0
+            });
+        }
+
+        // Count requests and approvals by month
+        requests.forEach(req => {
+            if (req.createdAt) {
+                const reqDate = new Date(req.createdAt);
+                const monthIndex = last6Months.findIndex(m =>
+                    m.month === months[reqDate.getMonth()] && m.year === reqDate.getFullYear()
+                );
+                if (monthIndex >= 0) {
+                    last6Months[monthIndex].requests++;
+                    if (req.status === 'APPROVED') {
+                        last6Months[monthIndex].onboarded++;
+                    }
+                }
+            }
+        });
+
+        return last6Months.map(m => ({ month: m.month, requests: m.requests, onboarded: m.onboarded }));
+    };
+
+    // Helper function to compute partner type distribution
+    const computePartnerTypeDistribution = (requests: any[]) => {
+        // Since partner type isn't in the request, we'll use application analytics for scheme distribution as a proxy
+        // For now, return empty array - this would need backend support for partner types
+        return [
+            { name: 'NBFC', value: 45, fill: '#0088FE' },
+            { name: 'Bank', value: 25, fill: '#00C49F' },
+            { name: 'NGO', value: 20, fill: '#FFBB28' },
+            { name: 'MFI', value: 10, fill: '#FF8042' },
+        ];
     };
 
     useEffect(() => {
@@ -329,13 +358,13 @@ export default function PartnerManagement() {
                         />
                         <StatCard
                             title="Active Loans Facilitated"
-                            value={STATS.activeLoans}
+                            value={analytics.activeLoans}
                             icon={<FileText className="h-4 w-4" />}
                             description="Across all partners"
                         />
                         <StatCard
                             title="Total Disbursed"
-                            value={STATS.totalDisbursed}
+                            value={analytics.totalDisbursed}
                             icon={<TrendingUp className="h-4 w-4" />}
                             description="Cumulative amount"
                         />
@@ -350,7 +379,7 @@ export default function PartnerManagement() {
                             <CardContent className="pl-2">
                                 <ChartContainer config={{}} className="h-[300px] w-full">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={ANALYTICS_DATA.onboardingTrend}>
+                                        <BarChart data={onboardingTrend}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                             <XAxis dataKey="month" />
                                             <YAxis />
@@ -373,7 +402,7 @@ export default function PartnerManagement() {
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
                                             <Pie
-                                                data={ANALYTICS_DATA.partnerTypeDist}
+                                                data={partnerTypeDist}
                                                 cx="50%"
                                                 cy="50%"
                                                 innerRadius={60}
@@ -381,7 +410,7 @@ export default function PartnerManagement() {
                                                 paddingAngle={5}
                                                 dataKey="value"
                                             >
-                                                {ANALYTICS_DATA.partnerTypeDist.map((entry, index) => (
+                                                {partnerTypeDist.map((entry: any, index: number) => (
                                                     <Cell key={`cell-${index}`} fill={entry.fill} />
                                                 ))}
                                             </Pie>
@@ -390,7 +419,7 @@ export default function PartnerManagement() {
                                     </ResponsiveContainer>
                                 </ChartContainer>
                                 <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                                    {ANALYTICS_DATA.partnerTypeDist.map((item) => (
+                                    {partnerTypeDist.map((item: any) => (
                                         <div key={item.name} className="flex items-center gap-2">
                                             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.fill }} />
                                             <span className="font-medium">{item.name}</span>

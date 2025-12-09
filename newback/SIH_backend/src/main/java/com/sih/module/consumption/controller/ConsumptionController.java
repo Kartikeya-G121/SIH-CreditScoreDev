@@ -11,6 +11,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -40,9 +42,18 @@ public class ConsumptionController {
     public ResponseEntity<ApiResponse<List<ConsumptionEntryResponse>>> uploadBatch(
             @AuthenticationPrincipal Long userId,
             @RequestParam("files") MultipartFile[] files,
-            @RequestParam("dataSource") String dataSource) {
+            @RequestParam("dataSource") String dataSource,
+            @RequestParam("amounts") BigDecimal[] amounts,
+            @RequestParam("dates") @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate[] dates) {
         try {
-            List<ConsumptionEntryResponse> responses = consumptionService.uploadBatch(userId, files, dataSource);
+            // Validate arrays have same length
+            if (files.length != amounts.length || files.length != dates.length) {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Files, amounts, and dates must have the same count"));
+            }
+
+            List<ConsumptionEntryResponse> responses = consumptionService.uploadBatch(
+                    userId, files, dataSource, amounts, dates);
             return ResponseEntity.ok(ApiResponse.success("Batch upload successful", responses));
         } catch (Exception e) {
             return ResponseEntity.badRequest()

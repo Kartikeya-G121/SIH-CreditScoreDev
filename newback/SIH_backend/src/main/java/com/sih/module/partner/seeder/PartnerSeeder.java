@@ -13,7 +13,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-@Component
+// @Component - Disabled: Using comprehensive SQL seed script instead
 @RequiredArgsConstructor
 @Slf4j
 public class PartnerSeeder implements CommandLineRunner {

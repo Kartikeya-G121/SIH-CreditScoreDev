@@ -93,15 +93,33 @@ export const consumptionService = {
     },
 
     /**
-     * Upload multiple bills at once for a specific category
+     * Upload multiple bills at once for a specific category with manual input data
      */
-    async uploadBillBatch(files: File[], dataSource: string): Promise<ConsumptionEntry[]> {
+    async uploadBillBatch(
+        files: File[],
+        dataSource: string,
+        amounts: number[],
+        dates: string[]
+    ): Promise<ConsumptionEntry[]> {
         try {
             const formData = new FormData();
+
+            // Append all files
             files.forEach(file => {
                 formData.append('files', file);
             });
+
+            // Append metadata
             formData.append('dataSource', dataSource);
+
+            // Append amounts and dates as arrays
+            amounts.forEach(amount => {
+                formData.append('amounts', amount.toString());
+            });
+
+            dates.forEach(date => {
+                formData.append('dates', date);
+            });
 
             const response = await fetchFromApi('/consumption/upload-batch', {
                 method: 'POST',

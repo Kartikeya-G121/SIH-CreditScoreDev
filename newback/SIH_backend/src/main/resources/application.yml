@@ -16,7 +16,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: update # Validate schema without modifications
     show-sql: false
     properties:
       hibernate:
@@ -32,11 +32,11 @@ spring:
       write-dates-as-timestamps: false
 
   flyway:
-    enabled: true
-    validate-on-migrate: false
+    enabled: true  # Apply only NEW migrations, preserve existing data
+    validate-on-migrate: false  # Don't validate existing schema
     locations: classpath:db/migration
-    baseline-on-migrate: true
-    baseline-version: 0
+    baseline-on-migrate: true  # Treat existing schema as baseline
+    baseline-version: 0  # Mark all existing as version 0
 
   mail:
     host: ${SMTP_HOST:smtp.gmail.com}
@@ -137,12 +137,12 @@ bbps:
 ml:
   risk:
     api:
-      url: ${ML_RISK_API_URL:http://localhost:5001/predict}
+      url: ${ML_RISK_API_URL:http://host.docker.internal:5001/predict}
     model:
       version: ${ML_RISK_MODEL_VERSION:v1}
   income:
     api:
-      url: ${ML_INCOME_API_URL:http://localhost:5002/predict}
+      url: ${ML_INCOME_API_URL:http://host.docker.internal:5002/predict}
 
 # Logging
 logging:

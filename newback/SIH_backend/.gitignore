@@ -46,6 +46,9 @@ application-*.properties
 .env
 .env.local
 
+# Database data files
+postgres_backup_data/
+
 # OS
 .DS_Store
 Thumbs.db

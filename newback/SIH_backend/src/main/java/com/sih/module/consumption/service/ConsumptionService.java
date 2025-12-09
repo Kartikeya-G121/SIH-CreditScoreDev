@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.MessageDigest;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -36,15 +37,20 @@ public class ConsumptionService {
     private final BbpsService bbpsService;
     private final ScoringEngineService scoringEngineService;
 
-    public List<ConsumptionEntryResponse> uploadBatch(Long userId, MultipartFile[] files, String dataSource) {
+    public List<ConsumptionEntryResponse> uploadBatch(Long userId, MultipartFile[] files, String dataSource,
+            BigDecimal[] amounts, LocalDate[] dates) {
         List<ConsumptionEntryResponse> responses = new ArrayList<>();
-        for (MultipartFile file : files) {
+        for (int i = 0; i < files.length; i++) {
             try {
                 ConsumptionEntryRequest request = new ConsumptionEntryRequest();
                 request.setDataSource(dataSource);
-                responses.add(uploadEntry(userId, request, file.getBytes(), file.getOriginalFilename()));
+                request.setBillingAmount(amounts[i]);
+                request.setBillingDate(dates[i]);
+                // All entries are manual - no OCR processing
+
+                responses.add(uploadEntry(userId, request, files[i].getBytes(), files[i].getOriginalFilename()));
             } catch (Exception e) {
-                log.error("Failed to upload file in batch: {}", file.getOriginalFilename(), e);
+                log.error("Failed to upload file in batch: {}", files[i].getOriginalFilename(), e);
                 // We continue processing other files even if one fails
             }
         }
@@ -57,14 +63,15 @@ public class ConsumptionService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Upload to Supabase
+        // Upload document to Supabase - FOR AUDIT/REFERENCE ONLY
+        // NO data will be extracted from this document
         String fileUrl = supabaseStorageService.uploadFile(fileData,
                 originalFilename != null ? originalFilename : "bill.pdf", "consumption");
 
         // Generate document hash for duplicate detection
         String documentHash = generateHash(fileData != null ? fileData : request.toString().getBytes());
 
-        // Check for duplicates
+        // Check for duplicates (optional - can be commented out if not needed)
         // if (entryRepository.findByUserUserId(userId).stream()
         // .anyMatch(e -> documentHash.equals(e.getDocumentHash()))) {
         // throw new BadRequestException("Duplicate entry detected");
@@ -73,14 +80,17 @@ public class ConsumptionService {
         ConsumptionEntry entry = ConsumptionEntry.builder()
                 .user(user)
                 .dataSource(request.getDataSource())
-                .billingAmount(null) // Will be populated by OCR
-                .billingDate(null) // Will be populated by OCR
-                .unitsConsumed(null) // Will be populated by OCR
+                // CRITICAL: Use ONLY manually entered data, NEVER OCR
+                .billingAmount(request.getBillingAmount()) // FROM USER INPUT
+                .billingDate(request.getBillingDate()) // FROM USER INPUT
+                .unitsConsumed(request.getUnitsConsumed()) // FROM USER INPUT (optional)
                 .documentHash(documentHash)
-                .verificationStatus("PENDING")
+                .verificationStatus("MANUAL_VERIFIED") // Always manual for this flow
+                .verificationSource("MANUAL") // Source is user input
+                .verificationConfidence(BigDecimal.valueOf(100)) // 100% confidence in user input
                 .isTamperedFlag(false)
-                .isImputed(false)
-                .fileS3Url(fileUrl)
+                .isImputed(true) // Flag as manually imputed
+                .fileS3Url(fileUrl) // Document URL (reference only)
                 .storageType("SUPABASE")
                 .build();
 
@@ -96,12 +106,12 @@ public class ConsumptionService {
             int toDelete = existingEntries.size() - 9; // We want to keep 9 so the new one makes 10
             for (int i = 0; i < toDelete; i++) {
                 ConsumptionEntry entryToDelete = existingEntries.get(i);
-                
+
                 // Delete file from Supabase if URL exists
                 if (entryToDelete.getFileS3Url() != null) {
                     supabaseStorageService.deleteFile(entryToDelete.getFileS3Url());
                 }
-                
+
                 entryRepository.delete(entryToDelete);
                 log.info("Retention policy: Deleted old entry {} for user {}", entryToDelete.getEntryId(),
                         userId);
@@ -109,10 +119,13 @@ public class ConsumptionService {
         }
 
         entry = entryRepository.save(entry);
-        log.info("Consumption entry created: {} for user: {}", entry.getEntryId(), userId);
+        log.info("MANUAL consumption entry created: {} for user: {} (Amount: {}, Date: {})",
+                entry.getEntryId(), userId, entry.getBillingAmount(), entry.getBillingDate());
 
-        // Trigger Async Verification
-        processBillVerification(entry.getEntryId(), fileUrl);
+        // ❌ NEVER CALL processBillVerification() for manual entries
+        // ❌ Document is stored for reference only - NO OCR processing
+        // ✅ Trigger ML scoring immediately with manual data
+        scoringEngineService.recalculateScoreForUser(userId);
 
         return mapToResponse(entry);
     }
@@ -190,7 +203,7 @@ public class ConsumptionService {
 
             // 3. Trigger Score Recalculation (Income Model)
             if (entry.getVerificationStatus().equals("VERIFIED")) {
-               scoringEngineService.recalculateScoreForUser(entry.getUser().getUserId());
+                scoringEngineService.recalculateScoreForUser(entry.getUser().getUserId());
             }
 
         } catch (Exception e) {

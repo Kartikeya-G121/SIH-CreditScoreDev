@@ -30,6 +30,11 @@ import {
   Eye,
   FileText,
   Landmark,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Users,
+  History,
 } from 'lucide-react';
 
 import { MOCK_BENEFICIARY_DATA, type User } from '@/lib/data';
@@ -117,17 +122,17 @@ const ProfileBlock: React.FC<{ user?: User; t: any }> = ({ user, t }) => {
 const ScorePie: React.FC<{ value: number; score: number; t: any }> = React.memo(({ value, score, t }) => {
   const clamped = Math.max(0, Math.min(100, Math.round(value)));
   return (
-    <div className="relative h-40 w-40">
+    <div className="relative h-32 w-32">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
             data={[{ value: clamped }, { value: 100 - clamped }]}
             dataKey="value"
-            innerRadius={60}
-            outerRadius={78}
+            innerRadius={48}
+            outerRadius={62}
             startAngle={90}
             endAngle={450}
-            cornerRadius={8}
+            cornerRadius={6}
           >
             <Cell fill="rgba(255,255,255,0.98)" />
             <Cell fill="rgba(255,255,255,0.15)" />
@@ -135,8 +140,8 @@ const ScorePie: React.FC<{ value: number; score: number; t: any }> = React.memo(
         </PieChart>
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="text-4xl font-bold mb-1">{score}</span>
-        <span className="text-[10px] uppercase tracking-[0.2em] text-white/90 font-medium">{safeT(t, 'credit_score', 'Credit Score')}</span>
+        <span className="text-3xl font-bold mb-1">{score}</span>
+        <span className="text-[9px] uppercase tracking-[0.2em] text-white/90 font-medium">{safeT(t, 'credit_score', 'Credit Score')}</span>
       </div>
     </div>
   );
@@ -390,47 +395,41 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-2xl" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
 
-              <CardContent className="relative p-8 lg:p-10">
+              <CardContent className="relative p-6 lg:p-8">
                 {/* Header Label */}
-                <div className="mb-6">
-                  <p className="text-xs uppercase tracking-[0.4em] text-white/90 font-semibold">
+                <div className="mb-5">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-white/90 font-semibold">
                     {safeT(t, 'composite_score_card_title', 'Composite Beneficiary Score')}
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                   {/* Left Section - Score Circle & Info */}
-                  <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-8">
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-6">
                     {/* Score Circle with Glow */}
                     <div className="relative flex-shrink-0">
-                      <div className="absolute -inset-4 bg-white/20 rounded-full blur-2xl opacity-60 group-hover:opacity-80 transition-opacity" />
+                      <div className="absolute -inset-3 bg-white/20 rounded-full blur-xl opacity-60 group-hover:opacity-80 transition-opacity" />
                       <ScorePie value={scorePercentage} score={creditScore} t={t} />
                     </div>
 
                     {/* Score Details */}
-                    <div className="space-y-5">
-                      <div>
-                        <h2 className="text-5xl font-bold tracking-tight mb-3">
-                          {scoreSummary?.label ?? 'Confident Low Risk'}
-                        </h2>
-                        <p className="text-lg text-white/95 leading-relaxed max-w-md font-medium">
-                          {profileData?.riskBucket ? `${profileData.riskBucket} Risk Profile` : 'Eligible for ₹2,00,000 micro-loan'}
+                    <div className="space-y-4">
+                      <div className="text-center lg:text-left">
+                        <p className="text-2xl font-bold text-white/95 leading-tight tracking-tight">
+                          {profileData?.riskBucket ? `${profileData.riskBucket} Risk Profile` : 'Complete your profile to get your credit score'}
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-4 flex-wrap">
+                      <div className="flex items-center justify-center lg:justify-start gap-4 flex-wrap">
                         <Badge className="bg-white/30 hover:bg-white/40 text-white border-white/40 backdrop-blur-md px-4 py-1.5 text-sm font-semibold shadow-lg">
                           <ShieldCheck className="w-4 h-4 mr-1.5" />
                           {profileData?.riskBucket ?? riskLevel}
                         </Badge>
-                        <div className="text-sm text-white/80">
-                          Last updated: <span className="font-medium">{scoreSummary?.updatedAt ?? 'Updated 2 hrs ago'}</span>
-                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right Section - Actions & Score Display */}
+                  {/* Right Section - Actions */}
                   <div className="flex flex-col items-center lg:items-end gap-6">
                     <Button
                       variant="secondary"
@@ -453,12 +452,95 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
                         </>
                       )}
                     </Button>
+                  </div>
+                </div>
 
+                {/* Risk Breakdown Mini-Analytics & Trend Indicator */}
+                <div className="mt-6 pt-4 border-t border-white/20">
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    {/* Risk Breakdown Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Activity className="w-4 h-4 text-white/80" />
+                        <h3 className="text-sm uppercase tracking-wider text-white/80 font-semibold">Risk Factors</h3>
+                      </div>
+                      <div className="space-y-2.5">
+                        {/* Payment History */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <History className="w-3.5 h-3.5 text-white/70" />
+                            <span className="text-sm text-white/90">Payment History</span>
+                          </div>
+                          <Badge className="bg-yellow-500/30 hover:bg-yellow-500/40 text-white border-yellow-400/30 backdrop-blur-sm px-3 py-0.5 text-xs">
+                            Moderate
+                          </Badge>
+                        </div>
+                        {/* Income Stability */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <IndianRupee className="w-3.5 h-3.5 text-white/70" />
+                            <span className="text-sm text-white/90">Income Stability</span>
+                          </div>
+                          <Badge className="bg-red-500/30 hover:bg-red-500/40 text-white border-red-400/30 backdrop-blur-sm px-3 py-0.5 text-xs">
+                            Low
+                          </Badge>
+                        </div>
+                        {/* Dependency Ratio */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-3.5 h-3.5 text-white/70" />
+                            <span className="text-sm text-white/90">Dependency Ratio</span>
+                          </div>
+                          <Badge className="bg-orange-500/30 hover:bg-orange-500/40 text-white border-orange-400/30 backdrop-blur-sm px-3 py-0.5 text-xs">
+                            High
+                          </Badge>
+                        </div>
+                        {/* Past Borrowing */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Landmark className="w-3.5 h-3.5 text-white/70" />
+                            <span className="text-sm text-white/90">Past Borrowing</span>
+                          </div>
+                          <Badge className="bg-green-500/30 hover:bg-green-500/40 text-white border-green-400/30 backdrop-blur-sm px-3 py-0.5 text-xs">
+                            Good
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
 
-
-                    <div className="text-center bg-white/10 backdrop-blur-sm rounded-2xl px-8 py-4 border border-white/20">
-                      <div className="text-5xl font-bold mb-1">{creditScore}</div>
-                      <div className="text-sm text-white/90 font-medium tracking-wide">UDAAN Score</div>
+                    {/* Trend Indicator Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <BarChart3 className="w-4 h-4 text-white/80" />
+                        <h3 className="text-sm uppercase tracking-wider text-white/80 font-semibold">Score Trend</h3>
+                      </div>
+                      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        {/* Sparkline Container */}
+                        <div className="h-12 mb-3 flex items-end gap-1">
+                          {[8, 12, 10, 15, 18, 14, 20, 22, 19, 25, 28, 24].map((height, i) => (
+                            <div
+                              key={i}
+                              className="flex-1 bg-gradient-to-t from-white/80 to-white/40 rounded-sm transition-all hover:from-white hover:to-white/60"
+                              style={{ height: `${height}%` }}
+                            />
+                          ))}
+                        </div>
+                        {/* Trend Summary */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-green-500/30 rounded-full">
+                              <TrendingUp className="w-3.5 h-3.5 text-green-300" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-white/95">Improved by 4 points</p>
+                              <p className="text-xs text-white/70">This month</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-green-300">+4</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

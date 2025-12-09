@@ -35,6 +35,8 @@ export function MyApplicationsList({ onApplyNew, isAdmin }: MyApplicationsListPr
     const [isLoading, setIsLoading] = useState(true);
     const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
     const [explanationApp, setExplanationApp] = useState<ApplicationResponse | null>(null);
+    const [withdrawId, setWithdrawId] = useState<number | null>(null);
+    const [isWithdrawing, setIsWithdrawing] = useState(false);
 
     const fetchApplications = async () => {
         try {
