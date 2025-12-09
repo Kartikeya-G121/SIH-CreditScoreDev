@@ -16,7 +16,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update # Validate schema without modifications
+      ddl-auto: validate # Validate schema without modifications
     show-sql: false
     properties:
       hibernate:

@@ -51,6 +51,7 @@ public class BeneficiaryService {
                 .geoLong(request.getGeoLong())
                 .literacyScore(request.getLiteracyScore() != null ? request.getLiteracyScore() : 0)
                 .identityProofType(request.getIdentityProofType())
+                .aadharNumber(request.getAadharNumber())
                 .education(request.getEducation())
                 .familySize(request.getFamilySize())
                 .dependencyCount(request.getDependencyCount())
@@ -93,6 +94,7 @@ public class BeneficiaryService {
                 .geoLong(request.getGeoLong())
                 .literacyScore(request.getLiteracyScore() != null ? request.getLiteracyScore() : 0)
                 .identityProofType(request.getIdentityProofType())
+                .aadharNumber(request.getAadharNumber())
                 .education(request.getEducation())
                 .familySize(request.getFamilySize())
                 .dependencyCount(request.getDependencyCount())
@@ -191,6 +193,8 @@ public class BeneficiaryService {
             profile.setGeoLong(request.getGeoLong());
         if (request.getLiteracyScore() != null)
             profile.setLiteracyScore(request.getLiteracyScore());
+        if (request.getAadharNumber() != null)
+            profile.setAadharNumber(request.getAadharNumber());
         if (request.getEducation() != null)
             profile.setEducation(request.getEducation());
         if (request.getFamilySize() != null)
@@ -242,6 +246,8 @@ public class BeneficiaryService {
             profile.setGeoLong(request.getGeoLong());
         if (request.getLiteracyScore() != null)
             profile.setLiteracyScore(request.getLiteracyScore());
+        if (request.getAadharNumber() != null)
+            profile.setAadharNumber(request.getAadharNumber());
         if (request.getEducation() != null)
             profile.setEducation(request.getEducation());
         if (request.getFamilySize() != null)
@@ -481,6 +487,7 @@ public class BeneficiaryService {
                 .casteCertificateUrl(profile.getCasteCertificateUrl())
                 .identityProofType(profile.getIdentityProofType())
                 .identityProofUrl(profile.getIdentityProofUrl())
+                .aadharNumber(profile.getAadharNumber())
                 .education(profile.getEducation())
                 .familySize(profile.getFamilySize())
                 .dependencyCount(profile.getDependencyCount())

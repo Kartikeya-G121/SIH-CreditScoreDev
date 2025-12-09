@@ -19,6 +19,7 @@ public class UpdateProfileRequest {
     private BigDecimal geoLat;
     private BigDecimal geoLong;
     private Integer literacyScore;
+    private String aadharNumber; // 12-digit Aadhar card number
 
     // Additional Socio-Economic Fields
     private String education;

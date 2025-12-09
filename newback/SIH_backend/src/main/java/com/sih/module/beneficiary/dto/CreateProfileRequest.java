@@ -21,6 +21,7 @@ public class CreateProfileRequest {
     private BigDecimal geoLong;
     private Integer literacyScore;
     private String identityProofType; // 'AADHAR', 'PAN'
+    private String aadharNumber; // 12-digit Aadhar card number
 
     // Additional Socio-Economic Fields
     private String education;

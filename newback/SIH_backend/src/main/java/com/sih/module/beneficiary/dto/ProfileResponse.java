@@ -34,6 +34,7 @@ public class ProfileResponse {
     private String casteCertificateUrl;
     private String identityProofType;
     private String identityProofUrl;
+    private String aadharNumber;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 

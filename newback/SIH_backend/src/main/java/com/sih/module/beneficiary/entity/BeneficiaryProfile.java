@@ -100,6 +100,9 @@ public class BeneficiaryProfile extends BaseEntity {
     @Column(name = "identity_proof_type", length = 50)
     private String identityProofType; // 'AADHAR', 'PAN'
 
+    @Column(name = "aadhar_number", length = 12)
+    private String aadharNumber; // 12-digit Aadhar card number
+
     @Column(name = "identity_proof_url", columnDefinition = "TEXT")
     private String identityProofUrl;
 
