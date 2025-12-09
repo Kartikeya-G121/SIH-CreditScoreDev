@@ -4,6 +4,7 @@ import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
 import { Toaster } from '@/components/ui/toaster';
 import { LanguageProvider } from '@/contexts/language-context';
+import '@/lib/suppress-errors';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 

@@ -223,6 +223,10 @@ export function BeautifulProfile({ profile, user, savedBills = [], applications 
                                             <span className="text-sm text-muted-foreground">Caste Category</span>
                                             <Badge variant="secondary" className="font-normal">{profile.casteCategory || 'N/A'}</Badge>
                                         </div>
+                                        <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                                            <span className="text-sm text-muted-foreground">Aadhar Number</span>
+                                            <span className="text-sm font-medium font-mono">{profile.aadharNumber || 'Not provided'}</span>
+                                        </div>
                                     </div>
                                 </div>
 

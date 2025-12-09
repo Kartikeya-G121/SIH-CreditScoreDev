@@ -228,8 +228,8 @@ public class ScoringEngineService {
 
     private void determineFinalStatus(LoanApplication app) {
         // Logic:
-        // If Risk Score < 40 (Low Risk) AND Income Bucket != Low (i.e. Medium or High) -> AUTO_SANCTIONED? 
-        // User asked for "low income, low risk" auto sanction. 
+        // If Risk Score < 40 (Low Risk) AND Income Bucket = Low -> AI_APPROVED
+        // Otherwise -> MANUAL_REVIEW for admin to review
         // "class_names = ['No Default', 'Default']". prob of Default.
         // So Higher Probability = Higher Risk.
         // So Risk Score < X is good.
@@ -243,13 +243,18 @@ public class ScoringEngineService {
             BigDecimal compositeScore = calculateCompositeScore(app.getRiskScore().doubleValue(), app.getIncomeBucket());
             app.setCreditScoreComposite(String.valueOf(compositeScore.intValue())); // Storing numeric score as string for now in app entity if needed, or mapping later
             
-            app.setStatus("AUTO_SANCTIONED");
-            app.setAutoSanctionReason("Applicant meets Low Income and Low Risk criteria based on ML scoring.");
-            // app.setCreditScoreComposite("A+"); // Replaced by numeric
+            // ML Model Decision: AI_APPROVED or MANUAL_REVIEW only
+            if (isLowRisk && isTargetIncome) {
+                app.setStatus("AI_APPROVED");
+                app.setAutoSanctionReason("Applicant meets Low Income and Low Risk criteria based on ML scoring.");
+            } else {
+                app.setStatus("MANUAL_REVIEW");
+                app.setAutoSanctionReason("Requires manual review - Risk Score: " + app.getRiskScore() + ", Income: " + app.getIncomeBucket());
+            }
         } else {
-            // Default to SUBMITTED to allow standard manual review
-            app.setStatus("SUBMITTED");
-            // app.setCreditScoreComposite("B"); // Replaced by numeric
+            // Default to MANUAL_REVIEW if scoring incomplete
+            app.setStatus("MANUAL_REVIEW");
+            app.setAutoSanctionReason("Incomplete scoring data - requires manual review");
         }
     }
 

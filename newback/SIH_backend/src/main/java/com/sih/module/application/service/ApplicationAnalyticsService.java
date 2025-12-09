@@ -146,6 +146,12 @@ public class ApplicationAnalyticsService {
                                                 app.getSanctionedBy() != null ? app.getSanctionedBy().getEmail() : null)
                                 .interestRate(app.getScheme() != null ? app.getScheme().getBaseInterestRate() : null)
                                 .processingFee(BigDecimal.ZERO) // Default to 0 as it's not in scheme yet
+                                // Credit Score & Risk Assessment
+                                .riskScore(app.getRiskScore())
+                                .riskBucket(app.getRiskBucket())
+                                .incomeBucket(app.getIncomeBucket())
+                                .incomeConfidence(app.getIncomeConfidence())
+                                .compositeScore(profile != null ? profile.getCompositeScore() : null)
                                 .createdAt(app.getCreatedAt())
                                 .updatedAt(app.getUpdatedAt())
                                 .build();

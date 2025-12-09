@@ -9,6 +9,7 @@ export interface BeneficiaryProfile {
     casteCategory?: string;
     dob?: string;
     gender?: string;
+    aadharNumber?: string;
     addressLine: string;
     district: string;
     state: string;
@@ -44,6 +45,7 @@ export interface CreateProfileRequest {
     casteCategory?: string;
     dob: string;
     gender?: string;
+    aadharNumber?: string;
     addressLine: string;
     district: string;
     state: string;
@@ -69,6 +71,7 @@ export interface UpdateProfileRequest {
     casteCategory?: string;
     dob?: string;
     gender?: string;
+    aadharNumber?: string;
     addressLine?: string;
     district?: string;
     state?: string;

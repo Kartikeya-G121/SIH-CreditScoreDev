@@ -3,6 +3,8 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   /* config options here */
   output: 'standalone',
+  reactStrictMode: false,
+  devIndicators: false,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -36,6 +38,13 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       }
     ],
+  },
+  webpack: (config, { dev, isServer }) => {
+    // Disable error overlay in development
+    if (dev && !isServer) {
+      config.devtool = false;
+    }
+    return config;
   },
 };
 

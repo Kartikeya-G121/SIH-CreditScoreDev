@@ -54,8 +54,8 @@ public class LoanApplication extends BaseEntity {
 
     @Column(name = "status", length = 50, nullable = false)
     @Builder.Default
-    private String status = "DRAFT"; // 'DRAFT', 'SUBMITTED', 'SCORING', 'APPROVED', 'REJECTED', 'SANCTIONED',
-                                     // 'WITHDRAWN'
+    private String status = "DRAFT"; // 'DRAFT', 'SUBMITTED', 'SCORING', 'APPROVED', 'AI_APPROVED', 
+                                     // 'MANUAL_REVIEW', 'REJECTED', 'SANCTIONED', 'WITHDRAWN'
 
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;

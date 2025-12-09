@@ -106,6 +106,14 @@ public class ApplicationController {
         return ResponseEntity.ok(ApiResponse.success("Loan sanctioned successfully", response));
     }
 
+    @GetMapping("/admin/{id}/detail")
+    public ResponseEntity<ApiResponse<AdminApplicationDetailResponse>> getAdminApplicationDetail(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long adminId) {
+        AdminApplicationDetailResponse response = applicationService.getAdminApplicationDetail(id, adminId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @GetMapping("/{id}/timeline")
     public ResponseEntity<ApiResponse<TimelineResponse>> getTimeline(@PathVariable Long id) {
         TimelineResponse response = applicationService.getApplicationTimeline(id);

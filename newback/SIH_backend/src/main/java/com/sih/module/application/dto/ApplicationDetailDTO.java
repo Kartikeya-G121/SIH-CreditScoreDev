@@ -36,6 +36,12 @@ public class ApplicationDetailDTO {
     private String sanctionedByName;
     private BigDecimal interestRate;
     private BigDecimal processingFee;
+    // Credit Score & Risk Assessment
+    private BigDecimal riskScore;
+    private String riskBucket;
+    private String incomeBucket;
+    private BigDecimal incomeConfidence;
+    private BigDecimal compositeScore;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }

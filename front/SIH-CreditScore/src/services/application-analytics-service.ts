@@ -70,6 +70,12 @@ export interface ApplicationDetail {
     sanctionedByName: string | null;
     interestRate?: number;
     processingFee?: number;
+    // Credit Score & Risk Assessment
+    riskScore?: number;
+    riskBucket?: string;
+    incomeBucket?: string;
+    incomeConfidence?: number;
+    compositeScore?: number;
     createdAt: string;
     updatedAt: string;
 }

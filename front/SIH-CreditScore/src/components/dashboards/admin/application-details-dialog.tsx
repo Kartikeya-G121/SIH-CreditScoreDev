@@ -45,10 +45,12 @@ interface ApplicationDetailsDialogProps {
 const STATUS_CONFIG = {
     DRAFT: { label: 'Draft', color: 'bg-gray-500', icon: FileText },
     SUBMITTED: { label: 'Submitted', color: 'bg-blue-500', icon: FileCheck },
-    SCORING: { label: 'Scoring', color: 'bg-yellow-500', icon: TrendingUp },
+    SCORING: { label: 'Scoring', color: 'bg-purple-500', icon: TrendingUp },
+    AI_APPROVED: { label: 'AI Approved', color: 'bg-emerald-500', icon: CheckCircle },
+    MANUAL_REVIEW: { label: 'Manual Review', color: 'bg-amber-500', icon: AlertCircle },
     APPROVED: { label: 'Approved', color: 'bg-green-500', icon: CheckCircle },
     REJECTED: { label: 'Rejected', color: 'bg-red-500', icon: XCircle },
-    SANCTIONED: { label: 'Sanctioned', color: 'bg-emerald-600', icon: CheckCircle },
+    SANCTIONED: { label: 'Sanctioned', color: 'bg-emerald-700', icon: CheckCircle },
     WITHDRAWN: { label: 'Withdrawn', color: 'bg-orange-500', icon: Ban },
 };
 
@@ -65,9 +67,8 @@ export function ApplicationDetailsDialog({
     const [interestRate, setInterestRate] = useState<string>('');
 
     // Pre-fill sanction details when dialog opens or application changes
-    // Pre-fill sanction details when dialog opens or application changes
     useEffect(() => {
-        if (application && (application.status === 'SCORING' || application.status === 'APPROVED')) {
+        if (application && (application.status === 'APPROVED' || application.status === 'AI_APPROVED')) {
             const fee = application.processingFee || 0;
             const amount = application.requestedAmount - fee;
             setSanctionAmount(amount.toString());
@@ -242,9 +243,66 @@ export function ApplicationDetailsDialog({
                             </div>
                         </div>
 
+                        {/* Credit Score & Risk Assessment Section */}
+                        {(application.riskScore || application.compositeScore || application.riskBucket || application.incomeBucket) && (
+                            <div className="border-t pt-4 mt-6">
+                                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                                    Credit Score & Risk Assessment
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Composite Credit Score */}
+                                    {application.compositeScore && (
+                                        <div className="border p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border-blue-200">
+                                            <Label className="text-muted-foreground text-sm">Composite Credit Score</Label>
+                                            <p className="text-4xl font-bold text-blue-600 mt-2">{application.compositeScore}</p>
+                                            <p className="text-xs text-muted-foreground mt-1">Out of 100</p>
+                                        </div>
+                                    )}
+
+                                    {/* Risk Score */}
+                                    {application.riskScore && (
+                                        <div className={`border p-4 rounded-lg ${application.riskScore < 40 ? 'bg-green-50 dark:bg-green-950/20 border-green-200' :
+                                                application.riskScore < 70 ? 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200' :
+                                                    'bg-red-50 dark:bg-red-950/20 border-red-200'
+                                            }`}>
+                                            <Label className="text-muted-foreground text-sm">Risk Score</Label>
+                                            <div className="flex items-baseline gap-2 mt-2">
+                                                <p className={`text-4xl font-bold ${application.riskScore < 40 ? 'text-green-600' :
+                                                        application.riskScore < 70 ? 'text-yellow-600' :
+                                                            'text-red-600'
+                                                    }`}>{application.riskScore}</p>
+                                                {application.riskBucket && (
+                                                    <Badge variant="outline" className={`${application.riskBucket === 'LOW' ? 'bg-green-500 text-white' :
+                                                            application.riskBucket === 'MEDIUM' ? 'bg-yellow-500 text-white' :
+                                                                'bg-red-500 text-white'
+                                                        } border-0`}>
+                                                        {application.riskBucket} RISK
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Income Bucket */}
+                                    {application.incomeBucket && (
+                                        <div className="border p-4 rounded-lg bg-muted/20">
+                                            <Label className="text-muted-foreground text-sm">Income Category</Label>
+                                            <p className="text-2xl font-bold mt-2">{application.incomeBucket}</p>
+                                            {application.incomeConfidence && (
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    Confidence: {(application.incomeConfidence * 100).toFixed(1)}%
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Action Section based on Status */}
-                        {/* Action Section based on Status */}
-                        {(application.status === 'SUBMITTED' || application.status === 'SCORING') && (
+                        {/* Review actions for SUBMITTED and MANUAL_REVIEW */}
+                        {(application.status === 'SUBMITTED' || application.status === 'MANUAL_REVIEW') && (
                             <div className="border-t pt-4 mt-6">
                                 <h3 className="text-lg font-semibold mb-4">Review Application</h3>
                                 <div className="space-y-4">
@@ -280,17 +338,18 @@ export function ApplicationDetailsDialog({
                             </div>
                         )}
 
-                        {(application.status === 'APPROVED' || application.status === 'SCORING') && (
+                        {/* Sanction actions for APPROVED and AI_APPROVED */}
+                        {(application.status === 'APPROVED' || application.status === 'AI_APPROVED') && (
                             <div className={`border-t pt-4 mt-6 ${application.status === 'SCORING' ? 'opacity-60' : ''}`}>
                                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                                     <IndianRupee className="h-5 w-5 text-primary" />
                                     Sanction Loan
                                 </h3>
                                 <div className="border p-4 rounded-lg space-y-4 relative">
-                                    {application.status === 'SCORING' && (
+                                    {(application.status === 'SCORING' || application.status === 'MANUAL_REVIEW' || application.status === 'SUBMITTED') && (
                                         <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center rounded-lg">
                                             <div className="bg-background border px-4 py-2 rounded-md shadow-sm text-sm font-medium">
-                                                Approve application first
+                                                {application.status === 'SCORING' ? 'Waiting for ML scoring...' : 'Approve application first'}
                                             </div>
                                         </div>
                                     )}
@@ -319,7 +378,7 @@ export function ApplicationDetailsDialog({
                                     <Button
                                         className="w-full"
                                         onClick={handleSanction}
-                                        disabled={isSubmitting || application.status === 'SCORING'}
+                                        disabled={isSubmitting || !['APPROVED', 'AI_APPROVED'].includes(application.status)}
                                     >
                                         <CheckCircle className="h-4 w-4 mr-2" />
                                         Sanction Loan

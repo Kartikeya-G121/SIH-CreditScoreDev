@@ -6,3 +6,4 @@ import com.sih.module.consumption.service.OcrService.ParsedBillDetails;
 public interface BbpsService {
     BbpsVerificationResponse verifyBill(ParsedBillDetails details);
 }
+//In future if NBCFDC WANT TO APPLY FOR 

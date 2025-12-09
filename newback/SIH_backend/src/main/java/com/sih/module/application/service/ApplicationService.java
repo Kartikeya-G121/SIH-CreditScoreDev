@@ -13,6 +13,7 @@ import com.sih.module.group.entity.BorrowerGroup;
 import com.sih.module.group.entity.GroupMember;
 import com.sih.module.group.repository.BorrowerGroupRepository;
 import com.sih.module.group.repository.GroupMemberRepository;
+import com.sih.module.beneficiary.entity.BeneficiaryProfile;
 import com.sih.module.beneficiary.repository.BeneficiaryProfileRepository;
 import com.sih.module.scheme.entity.LoanScheme;
 import com.sih.module.scheme.repository.LoanSchemeRepository;
@@ -22,6 +23,7 @@ import com.sih.module.scoring.service.ScoringEngineService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,11 +54,12 @@ public class ApplicationService {
         }
 
         // Check for existing active individual application
+        // Active = not DRAFT, not SANCTIONED, not REJECTED, not WITHDRAWN not manual review or ai approved
         if (request.getGroupId() == null) {
             List<LoanApplication> existingApplications = applicationRepository.findByUserUserId(userId);
             boolean hasActiveApplication = existingApplications.stream()
                     .anyMatch(app -> app.getGroup() == null &&
-                            !List.of("SANCTIONED", "REJECTED", "WITHDRAWN").contains(app.getStatus()));
+                            !List.of("DRAFT", "SANCTIONED", "REJECTED", "WITHDRAWN", "MANUAL_REVIEW", "AI_APPROVED").contains(app.getStatus()));
 
             if (hasActiveApplication) {
                 throw new BadRequestException(
@@ -84,10 +87,11 @@ public class ApplicationService {
             }
 
             // Check if user already has an active application in this group
+            // Active = not DRAFT, not SANCTIONED, not REJECTED, not WITHDRAWN
             List<LoanApplication> existingGroupApps = applicationRepository.findByGroupGroupId(request.getGroupId());
             boolean hasActiveGroupApp = existingGroupApps.stream()
                     .anyMatch(app -> app.getUser().getUserId().equals(userId) &&
-                            !List.of("SANCTIONED", "REJECTED", "WITHDRAWN").contains(app.getStatus()));
+                            !List.of("DRAFT", "SANCTIONED", "REJECTED", "WITHDRAWN", "MANUAL_REVIEW", "AI_APPROVED").contains(app.getStatus()));
 
             if (hasActiveGroupApp) {
                 throw new BadRequestException("You already have an active application in this group");
@@ -272,8 +276,10 @@ public class ApplicationService {
         LoanApplication application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
 
-        if (!"SUBMITTED".equals(application.getStatus()) && !"SCORING".equals(application.getStatus())) {
-            throw new BadRequestException("Application is not in reviewable status");
+        // Can review: SUBMITTED, MANUAL_REVIEW
+        if (!"SUBMITTED".equals(application.getStatus()) && 
+            !"MANUAL_REVIEW".equals(application.getStatus())) {
+            throw new BadRequestException("Application must be in SUBMITTED or MANUAL_REVIEW status to be reviewed");
         }
 
         if (request.getApproved() != null && request.getApproved()) {
@@ -323,8 +329,10 @@ public class ApplicationService {
         LoanApplication application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
 
-        if (!"APPROVED".equals(application.getStatus())) {
-            throw new BadRequestException("Only approved applications can be sanctioned");
+        // Can sanction: APPROVED or AI_APPROVED
+        if (!"APPROVED".equals(application.getStatus()) && 
+            !"AI_APPROVED".equals(application.getStatus())) {
+            throw new BadRequestException("Only APPROVED or AI_APPROVED applications can be sanctioned");
         }
 
         User officer = userRepository.findById(officerId)
@@ -392,10 +400,11 @@ public class ApplicationService {
         List<LoanApplication> applications = applicationRepository.findByGroupGroupId(groupId);
 
         return members.stream().map(member -> {
-            // Find application for this member
+            // Find active application for this member
+            // Active = not DRAFT, not SANCTIONED, not REJECTED, not WITHDRAWN
             LoanApplication app = applications.stream()
                     .filter(a -> a.getUser().getUserId().equals(member.getUser().getUserId()) &&
-                            !List.of("SANCTIONED", "REJECTED", "WITHDRAWN").contains(a.getStatus()))
+                            !List.of("DRAFT", "SANCTIONED", "REJECTED", "WITHDRAWN").contains(a.getStatus()))
                     .findFirst()
                     .orElse(null);
 
@@ -465,6 +474,140 @@ public class ApplicationService {
         // We can iterate and trigger individual scoring or batch scoring
 
         return savedApps.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    public AdminApplicationDetailResponse getAdminApplicationDetail(Long applicationId, Long adminId) {
+        LoanApplication application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+
+        User requestingUser = userRepository.findById(adminId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Verify user is ADMIN or LOAN_OFFICER
+        if (UserRole.ADMIN != requestingUser.getRole() && UserRole.LOAN_OFFICER != requestingUser.getRole()) {
+            throw new BadRequestException("Only admins and loan officers can view application details");
+        }
+
+        // Fetch beneficiary profile
+        BeneficiaryProfile profile = beneficiaryProfileRepository.findByUserUserId(application.getUser().getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Beneficiary profile not found"));
+
+        // Build beneficiary details
+        AdminApplicationDetailResponse.BeneficiaryDetails beneficiaryDetails = AdminApplicationDetailResponse.BeneficiaryDetails.builder()
+                .profileId(profile.getProfileId())
+                .fullName(profile.getFullName())
+                .email(application.getUser().getEmail())
+                .phoneNumber(application.getUser().getPhoneNumber())
+                .addressLine(profile.getAddressLine())
+                .district(profile.getDistrict())
+                .state(profile.getState())
+                .pincode(profile.getPincode())
+                .dob(profile.getDob())
+                .gender(profile.getGender())
+                .casteCategory(profile.getCasteCategory())
+                .regionType(profile.getRegionType())
+                .education(profile.getEducation())
+                .familySize(profile.getFamilySize())
+                .dependencyCount(profile.getDependencyCount())
+                .landOwned(profile.getLandOwned())
+                .incomeSource(profile.getIncomeSource())
+                .verifiedAnnualIncome(profile.getVerifiedAnnualIncome())
+                .isProfileVerified(profile.getIsProfileVerified())
+                .aadharNumber(profile.getAadharNumber())
+                .build();
+
+        // Build scheme details if exists
+        AdminApplicationDetailResponse.SchemeDetails schemeDetails = null;
+        if (application.getScheme() != null) {
+            com.sih.module.scheme.entity.LoanScheme scheme = application.getScheme();
+            schemeDetails = AdminApplicationDetailResponse.SchemeDetails.builder()
+                    .schemeId(scheme.getSchemeId())
+                    .schemeName(scheme.getSchemeName())
+                    .providerName(scheme.getProviderName())
+                    .description(null) // LoanScheme doesn't have description field
+                    .baseInterestRate(scheme.getBaseInterestRate())
+                    .maxLoanAmount(scheme.getMaxAmount())
+                    .maxTenureMonths(scheme.getMaxTenureMonths())
+                    .gracePeriodDays(scheme.getGracePeriodDays())
+                    .penalInterestRate(scheme.getPenaltyRate())
+                    .isActive(scheme.getIsActive())
+                    .build();
+        }
+
+        // Build scoring details
+        String riskColor = determineRiskColor(application.getRiskScore(), application.getRiskBucket());
+        
+        // Parse ML explanations if available
+        java.util.Map<String, Object> mlExplanations = null;
+        if (profile.getMlExplanations() != null && !profile.getMlExplanations().isEmpty()) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                mlExplanations = objectMapper.readValue(profile.getMlExplanations(), 
+                    new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+            } catch (Exception e) {
+                log.warn("Failed to parse ML explanations: {}", e.getMessage());
+            }
+        }
+
+        AdminApplicationDetailResponse.ScoringDetails scoringDetails = AdminApplicationDetailResponse.ScoringDetails.builder()
+                .riskScore(application.getRiskScore())
+                .riskBucket(application.getRiskBucket())
+                .riskColor(riskColor)
+                .incomeBucket(application.getIncomeBucket())
+                .incomeConfidence(application.getIncomeConfidence())
+                .compositeScore(profile.getCompositeScore())
+                .creditScoreComposite(application.getCreditScoreComposite())
+                .autoSanctionReason(application.getAutoSanctionReason())
+                .mlExplanations(mlExplanations)
+                .scoreTimestamp(profile.getScoreTimestamp())
+                .build();
+
+        return AdminApplicationDetailResponse.builder()
+                .applicationId(application.getApplicationId())
+                .userId(application.getUser().getUserId())
+                .groupId(application.getGroup() != null ? application.getGroup().getGroupId() : null)
+                .schemeId(application.getScheme() != null ? application.getScheme().getSchemeId() : null)
+                .requestedAmount(application.getRequestedAmount())
+                .purpose(application.getPurpose())
+                .tenureMonths(application.getTenureMonths())
+                .status(application.getStatus())
+                .rejectionReason(application.getRejectionReason())
+                .stageTimestamp(application.getStageTimestamp())
+                .sanctionedAmount(application.getSanctionedAmount())
+                .finalInterestRate(application.getFinalInterestRate())
+                .sanctionedBy(application.getSanctionedBy() != null ? application.getSanctionedBy().getUserId() : null)
+                .createdAt(application.getCreatedAt())
+                .updatedAt(application.getUpdatedAt())
+                .beneficiaryDetails(beneficiaryDetails)
+                .schemeDetails(schemeDetails)
+                .scoringDetails(scoringDetails)
+                .build();
+    }
+
+    private String determineRiskColor(BigDecimal riskScore, String riskBucket) {
+        // Determine color based on risk bucket first, then score
+        if (riskBucket != null) {
+            switch (riskBucket.toUpperCase()) {
+                case "LOW":
+                    return "green";
+                case "MEDIUM":
+                    return "yellow";
+                case "HIGH":
+                    return "red";
+                default:
+                    break; // Fall through to score-based determination
+            }
+        }
+        
+        // Fallback to score-based determination
+        if (riskScore != null) {
+            double score = riskScore.doubleValue();
+            if (score < 40) return "green";
+            if (score < 70) return "yellow";
+            return "red";
+        }
+        
+        return "gray"; // Unknown/not scored
     }
 
     private ApplicationResponse mapToResponse(LoanApplication application) {

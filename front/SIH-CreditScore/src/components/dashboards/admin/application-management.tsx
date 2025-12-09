@@ -64,10 +64,12 @@ import {
 const STATUS_CONFIG = {
     DRAFT: { label: 'Draft', color: 'bg-gray-500', icon: FileText },
     SUBMITTED: { label: 'Submitted', color: 'bg-blue-500', icon: FileCheck },
-    SCORING: { label: 'Scoring', color: 'bg-yellow-500', icon: TrendingUp },
+    SCORING: { label: 'Scoring', color: 'bg-purple-500', icon: TrendingUp },
+    AI_APPROVED: { label: 'AI Approved', color: 'bg-emerald-500', icon: CheckCircle },
+    MANUAL_REVIEW: { label: 'Manual Review', color: 'bg-amber-500', icon: AlertCircle },
     APPROVED: { label: 'Approved', color: 'bg-green-500', icon: CheckCircle },
     REJECTED: { label: 'Rejected', color: 'bg-red-500', icon: XCircle },
-    SANCTIONED: { label: 'Sanctioned', color: 'bg-emerald-600', icon: CheckCircle },
+    SANCTIONED: { label: 'Sanctioned', color: 'bg-emerald-700', icon: CheckCircle },
     WITHDRAWN: { label: 'Withdrawn', color: 'bg-orange-500', icon: Ban },
 };
 

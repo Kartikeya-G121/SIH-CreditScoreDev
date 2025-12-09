@@ -34,13 +34,20 @@ public class LoanOfficerController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
+        // Check if officer record exists for this user
         LoanOfficer officer = officerRepository.findByUserUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Officer not found"));
+                .orElse(null);
+
+        // If no officer record exists, return empty page
+        // This can happen for LOAN_OFFICER users who haven't been assigned to a partner yet
+        if (officer == null) {
+            return ResponseEntity.ok(ApiResponse.success(Page.empty()));
+        }
 
         Set<Integer> assignedSchemes = officer.getAssignedSchemeIds();
 
         Page<LoanApplication> applications;
-        if (assignedSchemes.isEmpty()) {
+        if (assignedSchemes == null || assignedSchemes.isEmpty()) {
             applications = Page.empty();
         } else {
             applications = applicationRepository.findBySchemeSchemeIdIn(assignedSchemes, PageRequest.of(page, size));

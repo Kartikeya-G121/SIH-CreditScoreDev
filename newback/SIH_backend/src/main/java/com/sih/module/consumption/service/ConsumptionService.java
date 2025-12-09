@@ -130,6 +130,8 @@ public class ConsumptionService {
         return mapToResponse(entry);
     }
 
+//OPTIONAL IN FUTURE IF THEY WANTED TO USE OCR + 
+
     @Async
     @Transactional
     public void processBillVerification(Long entryId, String fileUrl) {
@@ -222,6 +224,7 @@ public class ConsumptionService {
             }
         }
     }
+    //NOT NEEDED ANYMORE
 
     @Transactional
     public List<ConsumptionEntryResponse> syncOfflineData(Long userId, OfflineBatchRequest request) {

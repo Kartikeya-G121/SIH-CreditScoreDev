@@ -41,6 +41,7 @@ const profileSchema = z.object({
     casteCategory: z.string().optional(),
     dob: z.string().optional(),
     gender: z.string().optional(),
+    aadharNumber: z.string().regex(/^\d{12}$/, 'Aadhar number must be exactly 12 digits').optional(),
     addressLine: z.string().min(5, 'Address is required'),
     district: z.string().min(2, 'District is required'),
     state: z.string().min(2, 'State is required'),
@@ -90,6 +91,7 @@ export function EditProfileDialog({
             casteCategory: '',
             dob: '',
             gender: '',
+            aadharNumber: '',
             addressLine: '',
             district: '',
             state: '',
@@ -113,6 +115,7 @@ export function EditProfileDialog({
                 casteCategory: initialData.casteCategory || '',
                 dob: initialData.dob || '',
                 gender: initialData.gender || '',
+                aadharNumber: initialData.aadharNumber || '',
                 addressLine: initialData.addressLine || '',
                 district: initialData.district || '',
                 state: initialData.state || '',
@@ -140,6 +143,7 @@ export function EditProfileDialog({
                 casteCategory: data.casteCategory,
                 dob: data.dob,
                 gender: data.gender,
+                aadharNumber: data.aadharNumber,
                 addressLine: data.addressLine,
                 district: data.district,
                 state: data.state,
@@ -464,6 +468,24 @@ export function EditProfileDialog({
                                         <FormLabel>Date of Birth</FormLabel>
                                         <FormControl>
                                             <Input type="date" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="aadharNumber"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Aadhar Card Number</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="Enter 12-digit Aadhar number"
+                                                maxLength={12}
+                                                {...field}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
