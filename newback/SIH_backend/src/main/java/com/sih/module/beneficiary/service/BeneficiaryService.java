@@ -493,6 +493,7 @@ public class BeneficiaryService {
                 .scoreTimestamp(profile.getScoreTimestamp())
                 .riskBucket(profile.getRiskBucket())
                 .incomeBucket(profile.getIncomeBucket())
+                .mlExplanations(profile.getMlExplanations())
                 .financialAdvice(generateFinancialAdvice(profile))
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())

@@ -61,10 +61,12 @@ import LoanPortfolioDashboard from '@/components/dashboards/admin/loan-portfolio
 import LoanApplicationsList from '@/components/dashboards/admin/application-management';
 import PartnerSchemeManagement from '@/components/dashboards/partner/partner-scheme-management';
 import RegionalAnalytics from '@/components/dashboards/partner/regional-analytics';
+import AdvancedMLConfiguration from '@/components/dashboards/admin/advanced-ml-configuration';
 import {
   Briefcase,
   Map as MapIcon,
   Shield,
+  Settings,
 } from 'lucide-react';
 
 function DashboardSidebar() {
@@ -185,6 +187,11 @@ function DashboardSidebar() {
         id: 'system-metrics',
         icon: <Activity />,
         label: 'System Metrics',
+      },
+      {
+        id: 'advanced-config',
+        icon: <Settings />,
+        label: 'Advanced Configuration',
       },
       {
         id: 'notifications',
@@ -336,6 +343,9 @@ export default function DashboardPage() {
         }
         if (tab === 'partner-management') {
           return <PartnerManagement />;
+        }
+        if (tab === 'advanced-config') {
+          return <AdvancedMLConfiguration />;
         }
         return <OfficerDashboard activeTab={tab} />;
       default:

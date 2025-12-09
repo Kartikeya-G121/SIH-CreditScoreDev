@@ -422,7 +422,6 @@ export function EditProfileDialog({
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    <SelectItem value="GEN">General</SelectItem>
                                                     <SelectItem value="OBC">OBC</SelectItem>
                                                     <SelectItem value="SC">SC</SelectItem>
                                                     <SelectItem value="ST">ST</SelectItem>

@@ -81,23 +81,34 @@ public class ScoringService {
         BigDecimal mlRiskScore = null;
         String mlExplanation = null;
         String mlRiskCategory = null;
+        Map<String, Object> mlRiskResult = null;
+        Map<String, Object> mlIncomeResult = null;
         
         if (model != null) {
             try {
                 // Call ML Risk Classification API
                 Map<String, Object> riskInputData = buildRiskInputData(application, profile);
-                Map<String, Object> mlResult = mlModelService.predictRiskScore(riskInputData);
+                mlRiskResult = mlModelService.predictRiskScore(riskInputData);
                 
-                if (mlResult != null) {
-                    mlRiskScore = BigDecimal.valueOf((Double) mlResult.get("risk_score"));
-                    mlRiskCategory = (String) mlResult.get("risk_category");
-                    mlExplanation = (String) mlResult.get("explanation");
+                if (mlRiskResult != null) {
+                    mlRiskScore = BigDecimal.valueOf((Double) mlRiskResult.get("risk_score"));
+                    mlRiskCategory = (String) mlRiskResult.get("risk_category");
+                    mlExplanation = (String) mlRiskResult.get("explanation");
                     log.info("ML Risk Score: {}, Category: {}", mlRiskScore, mlRiskCategory);
+                    
+                    // Call ML Income Classification API
+                    try {
+                        mlIncomeResult = mlModelService.predictIncomeCategory(riskInputData);
+                        log.info("ML Income Category: {}", mlIncomeResult != null ? mlIncomeResult.get("predicted_category") : "null");
+                    } catch (Exception e) {
+                        log.warn("ML income prediction failed: {}", e.getMessage());
+                    }
                 }
             } catch (Exception e) {
                 log.warn("ML model call failed, using rule-based score: {}", e.getMessage());
             }
         }
+
 
         // Composite score (weighted average)
         // If ML score available, use it with higher weight; otherwise use rule-based
@@ -147,6 +158,20 @@ public class ScoringService {
                     compositeScore, rawIncomeScore, adjustedIncomeScore, creditRiskScore
             );
         }
+        
+        // Save ML explanations to beneficiary profile if ML models were used
+        if (mlRiskResult != null) {
+            saveMlExplanationsToProfile(profile, mlRiskResult, mlIncomeResult, compositeScore);
+        }
+        
+        // Update beneficiary profile with composite score and explanations
+        profile.setCompositeScore(compositeScore);
+        profile.setRiskBucket(riskBand);
+        profile.setScoreTimestamp(java.time.OffsetDateTime.now());
+        if (mlIncomeResult != null && mlIncomeResult.get("predicted_category") != null) {
+            profile.setIncomeBucket((String) mlIncomeResult.get("predicted_category"));
+        }
+        beneficiaryRepository.save(profile);
 
         CreditAssessment assessment = CreditAssessment.builder()
                 .application(application)
@@ -165,6 +190,7 @@ public class ScoringService {
         log.info("Assessment completed for application: {} - Score: {}", applicationId, compositeScore);
 
         return mapToResponse(assessment);
+
     }
 
     public AssessmentResponse getAssessment(Long applicationId) {
@@ -255,5 +281,180 @@ public class ScoringService {
                 .modelId(assessment.getModel() != null ? assessment.getModel().getModelId() : null)
                 .assessedAt(assessment.getAssessedAt())
                 .build();
+    }
+    
+    /**
+     * Save comprehensive ML explanations to beneficiary profile with categorical interpretations
+     * Converts SHAP values and feature importance into human-readable risk factor labels
+     */
+    private void saveMlExplanationsToProfile(BeneficiaryProfile profile, Map<String, Object> riskResult, 
+                                              Map<String, Object> incomeResult, BigDecimal compositeScore) {
+        try {
+            Map<String, Object> explanations = new HashMap<>();
+            
+            // Risk Model Explanations
+            if (riskResult != null) {
+                Map<String, Object> riskModel = new HashMap<>();
+                riskModel.put("score", riskResult.get("risk_score"));
+                riskModel.put("category", riskResult.get("risk_category"));
+                riskModel.put("modelVersion", riskResult.get("model_version"));
+                riskModel.put("timestamp", java.time.OffsetDateTime.now().toString());
+                
+                // Process top factors with categorical interpretations
+                if (riskResult.containsKey("top_factors")) {
+                    List<Map<String, Object>> topFactors = (List<Map<String, Object>>) riskResult.get("top_factors");
+                    List<Map<String, Object>> interpretedFactors = new java.util.ArrayList<>();
+                    
+                    for (Map<String, Object> factor : topFactors) {
+                        Map<String, Object> interpretedFactor = new HashMap<>();
+                        String featureName = (String) factor.get("feature");
+                        // ML API returns "score" not "shap_value"
+                        Double consensusScore = ((Number) factor.get("score")).doubleValue();
+                        
+                        // Interpret feature name to human-readable
+                        String displayName = interpretFeatureName(featureName);
+                        interpretedFactor.put("name", displayName);
+                        
+                        // Interpret consensus score to categorical impact
+                        // Positive score = increases risk, Negative score = decreases risk (protective)
+                        String impact = interpretShapValue(consensusScore, featureName);
+                        interpretedFactor.put("impact", impact);
+                        
+                        // Store original consensus score for reference
+                        interpretedFactor.put("shapValue", consensusScore);
+                        
+                        // Add description based on feature and impact
+                        String description = generateFactorDescription(featureName, consensusScore, impact);
+                        interpretedFactor.put("description", description);
+                        
+                        interpretedFactors.add(interpretedFactor);
+                    }
+                    
+                    riskModel.put("topFactors", interpretedFactors);
+                }
+                
+                explanations.put("riskModel", riskModel);
+            }
+            
+            // Income Model Explanations
+            if (incomeResult != null) {
+                Map<String, Object> incomeModel = new HashMap<>();
+                incomeModel.put("predictedCategory", incomeResult.get("predicted_category"));
+                incomeModel.put("confidence", incomeResult.get("confidence"));
+                
+                if (incomeResult.containsKey("probabilities")) {
+                    incomeModel.put("probabilities", incomeResult.get("probabilities"));
+                }
+                
+                explanations.put("incomeModel", incomeModel);
+            }
+            
+            // Composite Score and Trend
+            explanations.put("compositeScore", compositeScore);
+            
+            // Calculate score trend if previous score exists
+            if (profile.getCompositeScore() != null) {
+                Map<String, Object> scoreTrend = new HashMap<>();
+                BigDecimal previousScore = profile.getCompositeScore();
+                BigDecimal change = compositeScore.subtract(previousScore);
+                BigDecimal changePercent = previousScore.compareTo(BigDecimal.ZERO) > 0 
+                    ? change.divide(previousScore, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100))
+                    : BigDecimal.ZERO;
+                
+                scoreTrend.put("previousScore", previousScore);
+                scoreTrend.put("change", change);
+                scoreTrend.put("changePercent", changePercent);
+                scoreTrend.put("period", "MONTHLY");
+                
+                explanations.put("scoreTrend", scoreTrend);
+            }
+            
+            // Convert to JSON string and save
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            String jsonExplanations = objectMapper.writeValueAsString(explanations);
+            profile.setMlExplanations(jsonExplanations);
+            
+            log.info("Saved ML explanations to profile for user: {}", profile.getUser().getUserId());
+            
+        } catch (Exception e) {
+            log.error("Failed to save ML explanations: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Interpret SHAP value to categorical impact label
+     * Positive SHAP = increases risk (bad), Negative SHAP = decreases risk (good)
+     */
+    private String interpretShapValue(Double shapValue, String featureName) {
+        double absValue = Math.abs(shapValue);
+        
+        // For risk-increasing features (positive SHAP)
+        if (shapValue > 0) {
+            if (absValue > 0.15) return "HIGH_RISK";
+            if (absValue > 0.08) return "MODERATE_RISK";
+            return "LOW_RISK";
+        } 
+        // For risk-decreasing features (negative SHAP - protective)
+        else {
+            if (absValue > 0.15) return "VERY_GOOD";
+            if (absValue > 0.08) return "GOOD";
+            return "NEUTRAL";
+        }
+    }
+    
+    /**
+     * Convert technical feature names to human-readable display names
+     */
+    private String interpretFeatureName(String featureName) {
+        Map<String, String> featureMap = Map.ofEntries(
+            Map.entry("payment_history", "Payment History"),
+            Map.entry("income_stability", "Income Stability"),
+            Map.entry("dependency_ratio", "Dependency Ratio"),
+            Map.entry("past_borrowing", "Past Borrowing"),
+            Map.entry("annual_family_income", "Family Income"),
+            Map.entry("loan_amount", "Loan Amount"),
+            Map.entry("tenure_months", "Loan Tenure"),
+            Map.entry("family_size", "Family Size"),
+            Map.entry("dependents_count", "Number of Dependents"),
+            Map.entry("age", "Age"),
+            Map.entry("education_level", "Education Level"),
+            Map.entry("employment_type", "Employment Type")
+        );
+        
+        return featureMap.getOrDefault(featureName, 
+            // Fallback: capitalize and replace underscores
+            java.util.Arrays.stream(featureName.split("_"))
+                .map(word -> word.substring(0, 1).toUpperCase() + word.substring(1))
+                .collect(java.util.stream.Collectors.joining(" "))
+        );
+    }
+    
+    /**
+     * Generate human-readable description for each risk factor
+     */
+    private String generateFactorDescription(String featureName, Double shapValue, String impact) {
+        boolean isProtective = shapValue < 0;
+        
+        Map<String, String> positiveDescriptions = Map.ofEntries(
+            Map.entry("payment_history", "Consistent payment record"),
+            Map.entry("income_stability", "Stable income sources"),
+            Map.entry("past_borrowing", "Good repayment history"),
+            Map.entry("annual_family_income", "Adequate family income"),
+            Map.entry("education_level", "Higher education level")
+        );
+        
+        Map<String, String> negativeDescriptions = Map.ofEntries(
+            Map.entry("payment_history", "Irregular payment patterns"),
+            Map.entry("income_stability", "Variable income sources"),
+            Map.entry("dependency_ratio", "High number of dependents"),
+            Map.entry("loan_amount", "High loan amount relative to income"),
+            Map.entry("past_borrowing", "Limited credit history")
+        );
+        
+        if (isProtective) {
+            return positiveDescriptions.getOrDefault(featureName, "Positive indicator");
+        } else {
+            return negativeDescriptions.getOrDefault(featureName, "Risk indicator");
+        }
     }
 }

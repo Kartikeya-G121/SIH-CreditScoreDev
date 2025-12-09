@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "beneficiary_profiles", indexes = {
@@ -139,4 +141,8 @@ public class BeneficiaryProfile extends BaseEntity {
 
     @Column(name = "score_timestamp")
     private java.time.OffsetDateTime scoreTimestamp;
+
+    @Column(name = "ml_explanations", columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String mlExplanations; // JSON string containing ML model explanations
 }

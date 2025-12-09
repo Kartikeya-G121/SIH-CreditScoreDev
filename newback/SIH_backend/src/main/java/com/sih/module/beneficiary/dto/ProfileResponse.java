@@ -55,5 +55,6 @@ public class ProfileResponse {
     // Insights & Advice
     private String riskBucket;
     private String incomeBucket;
+    private String mlExplanations; // JSON string containing ML model explanations
     private java.util.List<String> financialAdvice;
 }

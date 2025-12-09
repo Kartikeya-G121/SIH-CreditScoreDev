@@ -118,7 +118,7 @@ export default function CustomTrainingSection() {
                         <span className="bg-slate-100 px-2 py-0.5 rounded text-sm text-slate-600">Step 1</span>
                         Upload Training Dataset
                     </Label>
-                    <div className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-3 transition-colors hover:bg-slate-50 hover:border-blue-400">
+                    <div className="relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-3 transition-colors hover:bg-slate-50 hover:border-blue-400">
                         <div className="p-3 bg-blue-50 rounded-full">
                             <UploadCloud className="h-6 w-6 text-blue-600" />
                         </div>
@@ -133,7 +133,7 @@ export default function CustomTrainingSection() {
                         <Input
                             type="file"
                             accept=".csv"
-                            className="absolute inset-0 opacity-0 cursor-pointer h-full"
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                             onChange={handleFileChange}
                         />
                     </div>

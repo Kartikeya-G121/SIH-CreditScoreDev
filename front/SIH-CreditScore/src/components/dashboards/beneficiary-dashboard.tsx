@@ -79,6 +79,9 @@ import { LoanList } from './loan/loan-list';
 import { PaymentDialog } from './loan/payment-dialog';
 import type { Loan } from '@/types/loan-types';
 import { BeautifulProfile } from './beautiful-profile';
+import { RiskFactorsDisplay } from './risk-factors-display';
+import { ScoreTrendDisplay } from './score-trend-display';
+import type { MLExplanations } from '@/types/ml-explanations';
 
 type Props = {
   activeTab?: string;
@@ -263,19 +266,38 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
     applicationJourney = [],
   } = MOCK_BENEFICIARY_DATA;
 
-  // Use real composite score if available, otherwise mock
-  const creditScore = profileData?.compositeScore ?? mockCreditScore;
+  // Use real composite score if available, otherwise 0 for new users
+  const creditScore = profileData?.compositeScore ?? 0;
+  const isNewUser = !profileData?.compositeScore;
 
   // scorePercentage (0-100)
   const scorePercentage = useMemo(() => {
-    // If real score (0-100), usage is direct. If mock (0-1000), scale it.
-    // Assuming backend returns 0-100.
+    // If real score (0-100), usage is direct
     if (profileData?.compositeScore !== undefined) {
       return Number(profileData.compositeScore);
     }
-    const raw = Number(creditScore) / 1000 * 100;
-    return Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : 0;
-  }, [creditScore, profileData?.compositeScore]);
+    // For new users without score, return 0
+    return 0;
+  }, [profileData?.compositeScore]);
+
+  // Parse ML explanations from profile data
+  const mlExplanations = useMemo<MLExplanations | null>(() => {
+    console.log('Profile Data:', profileData);
+    console.log('ML Explanations Raw:', profileData?.mlExplanations);
+
+    if (!profileData?.mlExplanations) {
+      console.log('No ML explanations found in profile data');
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(profileData.mlExplanations) as MLExplanations;
+      console.log('Parsed ML Explanations:', parsed);
+      return parsed;
+    } catch (error) {
+      console.error('Failed to parse ML explanations:', error);
+      return null;
+    }
+  }, [profileData?.mlExplanations]);
 
   // memoize formatted repayment schedule if heavy
   const formattedRepayments = useMemo(() => repaymentSchedule.map(p => ({ ...p })), [repaymentSchedule]);
@@ -416,7 +438,7 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
                     <div className="space-y-4">
                       <div className="text-center lg:text-left">
                         <p className="text-2xl font-bold text-white/95 leading-tight tracking-tight">
-                          {profileData?.riskBucket ? `${profileData.riskBucket} Risk Profile` : 'Complete your profile to get your credit score'}
+                          {isNewUser ? 'Your Profile is Incomplete' : profileData?.riskBucket ? `${profileData.riskBucket} Risk Profile` : 'Complete your profile to get your credit score'}
                         </p>
                       </div>
 
@@ -458,90 +480,11 @@ export default function BeneficiaryDashboard({ activeTab = 'overview' }: Props) 
                 {/* Risk Breakdown Mini-Analytics & Trend Indicator */}
                 <div className="mt-6 pt-4 border-t border-white/20">
                   <div className="grid gap-4 lg:grid-cols-2">
-                    {/* Risk Breakdown Section */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Activity className="w-4 h-4 text-white/80" />
-                        <h3 className="text-sm uppercase tracking-wider text-white/80 font-semibold">Risk Factors</h3>
-                      </div>
-                      <div className="space-y-2.5">
-                        {/* Payment History */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <History className="w-3.5 h-3.5 text-white/70" />
-                            <span className="text-sm text-white/90">Payment History</span>
-                          </div>
-                          <Badge className="bg-yellow-500/30 hover:bg-yellow-500/40 text-white border-yellow-400/30 backdrop-blur-sm px-3 py-0.5 text-xs">
-                            Moderate
-                          </Badge>
-                        </div>
-                        {/* Income Stability */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <IndianRupee className="w-3.5 h-3.5 text-white/70" />
-                            <span className="text-sm text-white/90">Income Stability</span>
-                          </div>
-                          <Badge className="bg-red-500/30 hover:bg-red-500/40 text-white border-red-400/30 backdrop-blur-sm px-3 py-0.5 text-xs">
-                            Low
-                          </Badge>
-                        </div>
-                        {/* Dependency Ratio */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Users className="w-3.5 h-3.5 text-white/70" />
-                            <span className="text-sm text-white/90">Dependency Ratio</span>
-                          </div>
-                          <Badge className="bg-orange-500/30 hover:bg-orange-500/40 text-white border-orange-400/30 backdrop-blur-sm px-3 py-0.5 text-xs">
-                            High
-                          </Badge>
-                        </div>
-                        {/* Past Borrowing */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Landmark className="w-3.5 h-3.5 text-white/70" />
-                            <span className="text-sm text-white/90">Past Borrowing</span>
-                          </div>
-                          <Badge className="bg-green-500/30 hover:bg-green-500/40 text-white border-green-400/30 backdrop-blur-sm px-3 py-0.5 text-xs">
-                            Good
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
+                    {/* Risk Breakdown Section - Now Dynamic */}
+                    <RiskFactorsDisplay explanations={mlExplanations} />
 
-                    {/* Trend Indicator Section */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <BarChart3 className="w-4 h-4 text-white/80" />
-                        <h3 className="text-sm uppercase tracking-wider text-white/80 font-semibold">Score Trend</h3>
-                      </div>
-                      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                        {/* Sparkline Container */}
-                        <div className="h-12 mb-3 flex items-end gap-1">
-                          {[8, 12, 10, 15, 18, 14, 20, 22, 19, 25, 28, 24].map((height, i) => (
-                            <div
-                              key={i}
-                              className="flex-1 bg-gradient-to-t from-white/80 to-white/40 rounded-sm transition-all hover:from-white hover:to-white/60"
-                              style={{ height: `${height}%` }}
-                            />
-                          ))}
-                        </div>
-                        {/* Trend Summary */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-green-500/30 rounded-full">
-                              <TrendingUp className="w-3.5 h-3.5 text-green-300" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-semibold text-white/95">Improved by 4 points</p>
-                              <p className="text-xs text-white/70">This month</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-green-300">+4</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    {/* Trend Indicator Section - Now Dynamic */}
+                    <ScoreTrendDisplay explanations={mlExplanations} />
                   </div>
                 </div>
               </CardContent>
