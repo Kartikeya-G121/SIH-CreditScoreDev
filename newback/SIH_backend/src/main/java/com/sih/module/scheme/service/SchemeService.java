@@ -4,6 +4,7 @@ import com.sih.common.exception.ResourceNotFoundException;
 import com.sih.module.scheme.dto.*;
 import com.sih.module.scheme.entity.LoanScheme;
 import com.sih.module.scheme.repository.LoanSchemeRepository;
+import com.sih.module.application.repository.LoanApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -32,6 +33,7 @@ public class SchemeService {
     private final LoanSchemeRepository schemeRepository;
     private final ChannelPartnerRepository channelPartnerRepository;
     private final UserRepository userRepository;
+    private final LoanApplicationRepository applicationRepository;
 
     @Transactional
     @CacheEvict(value = "schemes", allEntries = true)
@@ -228,6 +230,15 @@ public class SchemeService {
         }
         LoanScheme scheme = schemeRepository.findById(schemeId).get();
         validateSchemeOwnership(scheme);
+
+        // Check if any applications reference this scheme
+        long applicationCount = applicationRepository.countBySchemeSchemeId(schemeId);
+        if (applicationCount > 0) {
+            throw new IllegalStateException(
+                    "Cannot delete scheme: " + applicationCount + " loan application(s) are using this scheme. " +
+                            "Please deactivate the scheme instead or reassign/reject the applications first.");
+        }
+
         schemeRepository.deleteById(schemeId);
         log.info("Scheme {} deleted", schemeId);
     }

@@ -198,8 +198,8 @@ export default function SchemeManagement() {
                     <h2 className="text-2xl font-bold tracking-tight">Loan Schemes</h2>
                     <p className="text-muted-foreground">Manage loan schemes, eligibility, and terms.</p>
                 </div>
-                {/* Only Partners can create schemes */}
-                {user?.role === 'partner' && (
+                {/* Only Admins/Officers can create schemes */}
+                {user?.role === 'officer' && (
                     <Button onClick={handleCreate}>
                         <Plus className="mr-2 h-4 w-4" /> Create Scheme
                     </Button>
